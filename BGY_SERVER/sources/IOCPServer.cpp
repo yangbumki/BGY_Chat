@@ -1,6 +1,11 @@
 #include "../headers/IOCPServer.h"
 
-IOCPServer::IOCPServer(u_int serverPort) {
+IOCPServer::IOCPServer(u_int serverPort, BGYSqlite* sql)
+	: bgySql(sql) {
+	if (bgySql == nullptr) {
+		ErrorMessage("[IOCP] Failed to initialize sql");
+	}
+
 	if (wsaData != nullptr) {
 		WarningMessage("Somethings wrong");
 		ErrorMessage("Aleady exist wsa-data");
@@ -94,7 +99,7 @@ DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 		return ERROR;
 	}
 
-	server->CreateWorker();
+	server->CreateWorker(1);
 
 	//accept
 	while (true) {
@@ -103,8 +108,6 @@ DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 		cm->addrLen = sizeof(sockaddr_in);
 		cd = new ClientIOData;
 		memset(cd, 0, sizeof(ClientIOData));
-		dataHeader = new DataHeaders;
-		memset(dataHeader, 0, sizeof(DataHeaders));
 
 		cm->socket = accept(*server->serverSock, (sockaddr*)&cm->addr, &cm->addrLen);
 		if (cm->socket == INVALID_SOCKET) {
@@ -117,8 +120,8 @@ DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 
 		server->iocpHandle = CreateIoCompletionPort((HANDLE)cm->socket, server->iocpHandle, (ULONG_PTR)cm, 0);
 
-		cd->wsaBuf.buf = (CHAR*)dataHeader;
-		cd->wsaBuf.len = sizeof(DataHeaders);
+		cd->wsaBuf.buf = cd->data;
+		cd->wsaBuf.len = sizeof(cd->data);
 		cd->recvBytes = 0;
 		ZeroMemory(&cd->overlapped, sizeof(WSAOVERLAPPED));
 
@@ -151,7 +154,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 	ClientModel* cm = new ClientModel;
 	ClientIOData* cd = new ClientIOData;
 	DataHeaders* dataHeader = new DataHeaders;
-	memset(dataHeader, 0, sizeof(DataHeaders));
+
+	ZeroMemory(&cd->overlapped, sizeof(WSAOVERLAPPED));
 
 	while (true) {
 		auto result = GetQueuedCompletionStatus(iocp->iocpHandle, &transBytes, &key, (LPOVERLAPPED*)cd, INFINITE);
@@ -164,7 +168,7 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		if (!result) {
 			int error = WSAGetLastError();
 			if (error == DISCONNECTION) {
-				SetColorMessage("[IOCP] : Abnormal Disconnection", ccolor::RED, ccolor::BLACK);
+				SetColorMessage("[IOCP] : AbnormaZl Disconnection", ccolor::RED, ccolor::BLACK);
 				break;
 			}
 			printf("WSAGetLastError : %d \n", WSAGetLastError());
@@ -172,56 +176,34 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		}
 		cm = (ClientModel*)key;
 
-		DWORD flag = 0;
-		cd->wsaBuf.buf = (CHAR*)dataHeader;
-		cd->wsaBuf.len = sizeof(DataHeaders);
+		
+		cd->wsaBuf.buf = cd->data;
+		cd->wsaBuf.len = sizeof(cd->data);
 		cd->recvBytes = 0;
-		ZeroMemory(&cd->overlapped, sizeof(WSAOVERLAPPED));
-
-		result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &flag, &cd->overlapped, NULL);
+		cd->flag = 0;
+		
+		result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &cd->flag, &cd->overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 			continue;
 		}
-		if (cd->wsaBuf.len > 0) {
-			SetColorMessage("---Client-Data---", ccolor::LIGHTRED, ccolor::BLACK);
-			SetColorMessage(std::to_string(cd->wsaBuf.len).c_str(), ccolor::LIGHTCYAN, ccolor::BLACK);
-			SetColorMessage(cd->wsaBuf.buf, ccolor::LIGHTRED, ccolor::BLACK);
-		}
+
+		if (cd->wsaBuf.len <= 0 || cd->recvBytes <= 0) continue;
+
+		dataHeader = (DataHeaders*)cd->data;
+		printf("%d \n", dataHeader->dataCnt);
+		printf("%d \n", dataHeader->dataSize);
+		printf("%d \n", dataHeader->dataType);
+		AccountInfo* ai =(AccountInfo*)(cd->data + sizeof(DataHeaders));
+		wprintf(L"%s \n",ai->birth);
+		wprintf(L"%s \n", ai->name);
+		wprintf(L"%s \n", ai->id);
+		wprintf(L"%s \n", ai->passwd);
+		memset(cd->data, 0, sizeof(cd->data));
+		//iocp->SetParsingData();
 	}
 
 	return 0;
 }
-
-//DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
-//	HANDLE iocpHandle = (HANDLE)args;
-//	DWORD transBytes = 0;
-//	ULONG_PTR key = NULL;
-//	ClientModel* cm = new ClientModel;
-//	ClientIOData* cd = new ClientIOData;
-//
-//	memset(cm, 0, sizeof(ClientModel));
-//	memset(cd, 0, sizeof(ClientIOData));
-//
-//	while (true) {
-//		if (GetQueuedCompletionStatus(iocpHandle, &transBytes, &key, (LPOVERLAPPED*)&cd, INFINITE)) {
-//			cm = (ClientModel*)key;
-//
-//			DWORD flag = 0;
-//			auto result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &flag, &cd->overlapped, NULL);
-//			if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
-//				continue;
-//			}
-//			if (cd->wsaBuf.len > 0) {
-//				SetColorMessage("---Client-Data---", ccolor::LIGHTRED, ccolor::BLACK);
-//				SetColorMessage(cd->wsaBuf.buf, ccolor::LIGHTRED, ccolor::BLACK);
-//			}
-//		}
-//		printf("WSAGetLastError : %d \n", WSAGetLastError());
-//	}
-//
-//	return 0;
-//
-//}
 
 bool IOCPServer::CreateWorker(int workerCnt) {
 	if (this->serverStatus == SERVER_OPEN) {
@@ -235,9 +217,9 @@ bool IOCPServer::CreateWorker(int workerCnt) {
 		GetSystemInfo(&si);
 		workerCnt = si.dwNumberOfProcessors;
 	}
+
 	for (int psCnt = 0; psCnt < workerCnt; psCnt++) {
 		tempThread = CreateThread(NULL, 0, ServerWorkerThread, this, NULL, NULL);
-		/*tempThread = CreateThread(NULL, 0, server->ServerWorkerThread, server->iocpHandle, NULL, NULL);*/
 		if (tempThread == NULL) {
 			ErrorMessage("Failed to create-thread");
 			return ERROR;
@@ -248,7 +230,6 @@ bool IOCPServer::CreateWorker(int workerCnt) {
 
 	return true;
 }
-
 bool IOCPServer::ServerOpen() {
 	if (!cModels.empty()) {
 		WarningMessage("Aleady eixst clients");
@@ -268,8 +249,6 @@ bool IOCPServer::ServerOpen() {
 
 	if (serverOpenThreadHandle != NULL) {
 		WarningMessage("Aleady exist server");
-
-		//WaitForSingleObject(serverOpenThreadHandle, INFINITE);
 		TerminateThread(serverOpenThreadHandle, ALEDADY_EXIST);
 		CloseHandle(serverOpenThreadHandle);
 		serverOpenThreadHandle = NULL;
@@ -283,7 +262,6 @@ bool IOCPServer::ServerOpen() {
 
 	return true;
 }
-
 bool IOCPServer::ServerStop() {
 	if (workerThreads.size() < 0) {
 		WarningMessage("[IOCP] : The thread does not exist.");
@@ -298,7 +276,6 @@ bool IOCPServer::ServerStop() {
 
 	return true;
 }
-
 bool IOCPServer::ServerRestart() {
 	if (serverStatus == SERVER_OPEN) {
 		WarningMessage("[IOCP] : Aleady open Server");
@@ -306,6 +283,10 @@ bool IOCPServer::ServerRestart() {
 	}
 
 	CreateWorker();
+	return true;
+}
+
+bool IOCPServer::SetParsingData() {
 	return true;
 }
 

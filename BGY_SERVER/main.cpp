@@ -19,7 +19,7 @@ const char* DB_PATH = "test.db";
 int main(int argc, char* argv[]) {
 
 	BGYSqlite sql(DB_PATH);
-	IOCPServer* server = new IOCPServer(PORT_NUM);
+	IOCPServer* server = new IOCPServer(PORT_NUM, &sql);
 	server->ServerOpen();
 
 	//function test

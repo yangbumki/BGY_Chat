@@ -12,6 +12,8 @@
 #include <thread>
 
 //전처리
+#define BUFSIZE						1024
+
 #define MAX_ACCOUNT_LEN				128
 
 #define ERROR_TEXT_COLOR			4
@@ -83,9 +85,11 @@ typedef struct CLEINT_MODEL {
 
 typedef struct CLIENT_IO_DATA {
 	WSABUF wsaBuf;
+	char data[BUFSIZE];
 	OVERLAPPED overlapped;
 	DWORD recvBytes;
 	DWORD sendBytes;
+	DWORD flag;
 }ClientIOData;
 
 

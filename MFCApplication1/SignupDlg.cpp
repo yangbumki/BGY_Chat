@@ -56,7 +56,6 @@ void SignupDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(SignupDlg, CDialogEx)
 	ON_BN_CLICKED(BTN_CREATE_ACCOUNT, &SignupDlg::OnBnClickedSignUp)
 	ON_BN_CLICKED(BTN_CANCEL, &SignupDlg::OnBnClickedSignUp)
-	ON_NOTIFY(DTN_DATETIMECHANGE, DATETIME_BIRTH, &SignupDlg::OnDtnDatetimechangeDateTimeBirth)
 END_MESSAGE_MAP()
 
 
@@ -98,7 +97,8 @@ void SignupDlg::OnBnClickedSignUp()
 	dh->dataSize = sizeof(ai);
 	dh->dataType = DataType::CREATE_ACCOUNT;
 
-	client->SendData(dh, ai);
+	client->SendData(dh);
+	client->SendData(ai);
 
 	delete(ai);
 	delete(dh);

@@ -1,8 +1,4 @@
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <Windows.h>
-
-#pragma comment(lib, "Ws2_32.lib")
+#include "../Common/common.h"
 
 #include <iostream>
 #include <conio.h>
@@ -11,27 +7,17 @@
 #define PORT_NUM		8986
 #define BUFSIZE			1024
 
-typedef struct CLIENT_MODEL {
-	SOCKET sock;
-	sockaddr_in addr;
-}ClientModel;
-
-typedef struct CLIENT_IO_DATA {
-	WSABUF wsaBuf;
-	DWORD recvBytes;
-	DWORD sendBytes;
-	WSAOVERLAPPED overlap;
-	char buffer[BUFSIZE];
-}ClientIOData;
-
 DWORD WINAPI WorkerFunction(void* args) {
 	HANDLE iocpHandle = (HANDLE)args;
 	DWORD transBytes = 0;
 	ULONG_PTR ptr;
-	ClientModel* cm = new CLIENT_MODEL;
+	ClientModel* cm = new ClientModel;
 	memset(cm, 0, sizeof(ClientModel));
 	ClientIOData* cd = new ClientIOData;
 	memset(cd, 0, sizeof(ClientIOData));
+
+	DataHeaders* dh = new DataHeaders;
+	memset(dh, 0, sizeof(DataHeaders));
 
 	while (true) {
 		if (GetQueuedCompletionStatus(iocpHandle, &transBytes, &ptr, (LPOVERLAPPED*)cd, INFINITE)) {
@@ -45,20 +31,33 @@ DWORD WINAPI WorkerFunction(void* args) {
 			delete(tempAddr);
 
 			DWORD flag = 0;
-			cd->wsaBuf.buf = cd->buffer;
-			cd->wsaBuf.len = sizeof(cd->buffer);
+			/*cd->wsaBuf.buf = cd->buffer;
+			cd->wsaBuf.len = sizeof(cd->buffer);*/
+			cd->wsaBuf.buf = (CHAR*)dh;
+			cd->wsaBuf.len = sizeof(dh);
 			cd->recvBytes = 0;
 
-			/*auto result = recv(cm->sock, cd->buffer, strlen(cd->buffer), 0);
-			if (result != 0) {
-				printf("[WORKER] : %s \n", cd->buffer);
-			}*/
+			
 
-			auto result = WSARecv(cm->sock, &cd->wsaBuf, 1, &cd->recvBytes, &flag, &cd->overlap, NULL);
-			printf("Recv-data : %s \n", cd->wsaBuf.buf);
+			auto result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &flag, &cd->overlapped, NULL);
 			if(result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 				printf("Failed to recv \n");
 				printf("[Worker] ERROR : %d \n", WSAGetLastError());
+			}
+
+			printf("recvBytes : %d \n", cd->recvBytes);
+
+			if (cd->recvBytes > 0) {
+				printf("size : %d \n", dh->dataSize);
+				printf("type : %d \n", dh->dataType);
+				printf("Count: %d \n", dh->dataCnt);
+			}
+
+			result = recv(cm->socket, (char*)dh, sizeof(DataHeaders), 0);
+			if (result != 0) {
+				printf("[WORKER] : %d \n", dh->dataCnt);
+				printf("[WORKER] : %d \n", dh->dataSize);
+				printf("[WORKER] : %d \n", dh->dataType);
 			}
 		}
 	}
@@ -96,17 +95,18 @@ DWORD WINAPI IOCPFunction(void* args) {
 
 	ClientModel cm;
 	ClientIOData cd;
+	char buf[1024] = { 0, };
 	int len = sizeof(SOCKADDR_IN);
 
 	memset(&cm, 0, sizeof(ClientModel));
 	memset(&cd, 0, sizeof(ClientIOData));
 
-	cd.wsaBuf.buf = cd.buffer;
-	cd.wsaBuf.len = sizeof(cd.buffer);
+	cd.wsaBuf.buf = buf;
+	cd.wsaBuf.len = sizeof(buf);
 
 	while (1) {
-		cm.sock = accept(*sock, (sockaddr*)&cm.addr, &len);
-		if (cm.sock == NULL) {
+		cm.socket = accept(*sock, (sockaddr*)&cm.addr, &len);
+		if (cm.socket == NULL) {
 			printf("Somethings wrong\n");
 			printf("Check your code - accept\n");
 			return -1;
@@ -117,17 +117,18 @@ DWORD WINAPI IOCPFunction(void* args) {
 		printf("Client-addresss : %s \n", tempAddr);
 		delete(tempAddr);
 
-		iocpHandle = CreateIoCompletionPort((HANDLE)cm.sock, iocpHandle, (ULONG_PTR)&cm, 0);
+		iocpHandle = CreateIoCompletionPort((HANDLE)cm.socket, iocpHandle, (ULONG_PTR)&cm, 0);
 		printf("Success to Create new iocp\n");
 
 		DWORD flag = 0;
 
 		cd.wsaBuf.len = BUFSIZE;
 		cd.recvBytes = 0;
-		ZeroMemory(&cd.overlap, sizeof(WSAOVERLAPPED));
+		
+		ZeroMemory(&cd.overlapped, sizeof(WSAOVERLAPPED));
 		flag = 0;
 
-		auto result = WSARecv(cm.sock, &cd.wsaBuf, 1, &cd.recvBytes, &flag, &cd.overlap, NULL);
+		auto result = WSARecv(cm.socket, &cd.wsaBuf, 1, &cd.recvBytes, &flag, &cd.overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 			printf("Failed to recv \n");
 			printf("Error : %d\n", WSAGetLastError());

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../../Common/common.h"
+#include "BGYSqlite.h"
 
 #define ALEDADY_EXIST		-1
 #define ERROR				-1
-\
+
 #define STOP				0
 #define DISCONNECTION		64
 
@@ -21,6 +22,8 @@ private:
 
 	std::vector<ClientModel*> cModels;
 
+	BGYSqlite* bgySql = nullptr;
+
 	typedef enum SERVER_STATUS {
 		SERVER_NONE = 0,
 		SERVER_OPEN,
@@ -36,12 +39,14 @@ private:
 	bool CreateWorker(int workerCnt = 0);
 
 public:
-	IOCPServer(u_int serverPort);
+	IOCPServer(u_int serverPort,BGYSqlite* sql);
 	~IOCPServer();
 
 	bool ServerOpen();
 	bool ServerStop();
 	bool ServerRestart();
+
+	bool SetParsingData();
 	
 };
 

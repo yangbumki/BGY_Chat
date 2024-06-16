@@ -35,6 +35,4 @@ protected:
 public:
 	afx_msg void OnBnClickedSignUp();
 	afx_msg void OnBnClickedCancel();
-	afx_msg void OnDtnDatetimechangeDateTimeBirth(NMHDR* pNMHDR, LRESULT* pResult);
-	
 };
