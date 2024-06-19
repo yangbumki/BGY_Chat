@@ -19,8 +19,8 @@ BGYSqlite::~BGYSqlite() {
 }
 
 bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
-	const char* sqlCmd = "select id from account";
-	auto result = sqlite3_prepare(db, sqlCmd, sizeof(sqlCmd), &stmt, nullptr);
+	const char* sqlCmd = "select id from users";
+	auto result = sqlite3_prepare(db, sqlCmd, -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
 		WarningMessage("Failed to prepare db");
 		return false;
@@ -31,12 +31,37 @@ bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
 
 		for (int col = 0; col < maxCol; col++) {
 			const unsigned char* currentID = sqlite3_column_text(stmt, col);
-			result = strncmp((const char*)ai.id, (const char*)currentID, sizeof(currentID));
+			auto wideID = ConvertCtoWC((const char*)currentID);
+
+			result = wcsncmp(ai.id, wideID, wcslen(ai.id));
 			if (result == 0) {
 				WarningMessage("[SQL] : Duplicated account");
-				return false;
+				return true;
 			}
 		}
+	}
+
+	return false;
+}
+
+bool BGYSqlite::CreateAccount(DB_ACCOUNT_INFO ai) {
+	if (GetDuplicatedAccount(ai)) return false;
+
+	char* sQuote = (char*)"\'";
+	char* comma = (char*)",";
+
+	auto id = ConvertWCtoC(ai.id);
+	auto name = ConvertWCtoC(ai.name);
+	auto passwd = ConvertWCtoC(ai.passwd);
+	auto birth = ConvertWCtoC(ai.birth);
+
+	char* sql = (char*)"insert into users values(";
+	auto addStr = AddString(17, sql,sQuote, id, sQuote, comma, sQuote, passwd, sQuote, comma, sQuote, name, sQuote, comma, sQuote,birth, sQuote, ")");
+
+	auto result = sqlite3_prepare(db, addStr, -1, &stmt, nullptr);
+	if (result != SQLITE_OK) {
+		WarningMessage("Failed to prepare db");
+		return false;
 	}
 
 	return true;

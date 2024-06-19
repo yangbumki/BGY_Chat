@@ -96,9 +96,9 @@ void SignupDlg::OnBnClickedSignUp()
 
 	dh->dataSize = sizeof(ai);
 	dh->dataType = DataType::CREATE_ACCOUNT;
-
-	client->SendData(dh);
-	client->SendData(ai);
+	
+	
+	client->SendData(dh, ai);
 
 	delete(ai);
 	delete(dh);

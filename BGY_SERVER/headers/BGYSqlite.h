@@ -17,5 +17,6 @@ public:
 	~BGYSqlite();
 
 	bool GetDuplicatedAccount(DB_ACCOUNT_INFO ai);
+	bool CreateAccount(DB_ACCOUNT_INFO ai);
 };
 

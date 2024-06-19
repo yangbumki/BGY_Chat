@@ -12,7 +12,6 @@ int main() {
 	SOCKET* sock;
 	SOCKADDR_IN addr;
 
-	ClientIOData* cd = nullptr;
 	DataHeaders* dh = nullptr;
 
 	auto result = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -27,31 +26,29 @@ int main() {
 
 	result = connect(*sock, (sockaddr*)&addr, sizeof(SOCKADDR_IN));
 
+	ClientModel* cm = new ClientModel;
+	memset(cm, 0, sizeof(ClientModel));
 	
-	
+	int i = 0;
+
 	while (1) {
 		
 		if (_kbhit()) {
-			cd = new ClientIOData;
+			memset(cm, 0, sizeof(ClientModel));
 
+			dh = (DataHeaders*)cm->clientData.data;
+			dh->dataCnt = i;
+			dh->dataSize = i + 1;
+			dh->dataType = i + 2;
 
-			dh = new DataHeaders;
-			dh->dataType = 1;
-			dh->dataSize = 2;
-			dh->dataCnt = 3;
+			i++;
 
-			cd->wsaBuf.buf = (CHAR*)dh;
-			cd->wsaBuf.len = sizeof(DataHeaders);
-
-			memset(cd, 0, sizeof(ClientIOData));
-			cd->wsaBuf.buf = (CHAR*)dh;
-			cd->wsaBuf.len = sizeof(DataHeaders);
+			cm->clientData.wsaBuf.buf = cm->clientData.data;
+			cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
 
 			printf("Clicked \n");
-			result = WSASend(*sock, &cd->wsaBuf, 1, &cd->sendBytes, cd->flag, &cd->overlapped, NULL);
-			printf("send Byte 1 : %d \n", cd->sendBytes);
-			result = send(*sock, (char*)dh, sizeof(DataHeaders), 0);
-			printf("send bytes : %d \n", result);
+			result = WSASend(*sock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
+			printf("send Byte 1 : %d \n", cm->clientData.sendBytes);
 
 			if (_getch() == 27)	break;
 		}

@@ -13,7 +13,7 @@ private:
 	SOCKET* serverSock = nullptr;
 	sockaddr_in* serverAddr = nullptr;
 
-	ClientIOData* clientData = nullptr;
+	ClientModel* cm = nullptr;
 	BOOL serverInfoStat = FALSE;
 
 protected:
@@ -60,8 +60,8 @@ public:
 		*serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (*serverSock == INVALID_SOCKET) ErrorMessage("[CLIENT] FALIED to create tcp-socket");
 
-		clientData = new ClientIOData;
-		memset(clientData, 0, sizeof(ClientIOData));
+		cm = new ClientModel;
+		memset(cm, 0, sizeof(ClientModel));
 
 		//Set test server info
 		SetServerInfo(8986, "127.0.0.1");
@@ -90,32 +90,27 @@ public:
 	}
 
 	template <typename T>
-	bool SendData(T* data) {
+	bool SendData(DataHeaders* header, T* data) {
 		if (data == nullptr) {
 			WarningMessage("[CLIENT] : Failed to send-data");
 			return false;
 		}
 
-	/*	if (clientData != nullptr) {
-			WarningMessage("[CLIENT] : Aleady exist client data");
-			WarningMessage("[CLIENT] : Check your code");
-			delete(clientData);
-			clientData = nullptr;
-		}*/
+		memset(&cm->clientData, 0, sizeof(cm->clientData));
 
-		
+		memcpy_s(cm->clientData.data, sizeof(cm->clientData.data), header, sizeof(DataHeaders));
+		memcpy_s(cm->clientData.data+sizeof(DataHeaders), sizeof(cm->clientData.data), data, sizeof(T));
 
-		clientData->wsaBuf.buf = (char*)data;
-		clientData->wsaBuf.len = sizeof(T);
+		cm->clientData.wsaBuf.buf = cm->clientData.data;
+		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
+
 		int result = 0;
-		 result = WSASend(*this->serverSock, &clientData->wsaBuf, 1, &clientData->sendBytes, clientData->flag, &clientData->overlapped, NULL);
+
+		 result = WSASend(*this->serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
 			WarningMessage("[CLIENT] : Failed to send data-header");
 			return false;
 		}
-
-		result = send(*this->serverSock, (char*)data, sizeof(T), clientData->flag);
-
 
 		return true;
 	}

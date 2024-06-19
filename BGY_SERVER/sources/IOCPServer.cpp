@@ -91,23 +91,19 @@ IOCPServer::~IOCPServer() {
 DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 	IOCPServer* server = (IOCPServer*)args;
 	ClientModel* cm = nullptr;
-	ClientIOData* cd = nullptr;
-	DataHeaders* dataHeader = nullptr;
 
 	if (server->serverStatus != SERVER_NONE) {
 		WarningMessage("[IOCP] : Aleady eixst server");
 		return ERROR;
 	}
 
-	server->CreateWorker(1);
+	server->CreateWorker();
 
 	//accept
 	while (true) {
 		cm = new ClientModel;
 		memset(cm, 0, sizeof(ClientModel));
 		cm->addrLen = sizeof(sockaddr_in);
-		cd = new ClientIOData;
-		memset(cd, 0, sizeof(ClientIOData));
 
 		cm->socket = accept(*server->serverSock, (sockaddr*)&cm->addr, &cm->addrLen);
 		if (cm->socket == INVALID_SOCKET) {
@@ -120,14 +116,10 @@ DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 
 		server->iocpHandle = CreateIoCompletionPort((HANDLE)cm->socket, server->iocpHandle, (ULONG_PTR)cm, 0);
 
-		cd->wsaBuf.buf = cd->data;
-		cd->wsaBuf.len = sizeof(cd->data);
-		cd->recvBytes = 0;
-		ZeroMemory(&cd->overlapped, sizeof(WSAOVERLAPPED));
+		cm->clientData.wsaBuf.buf = cm->clientData.data;
+		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
 
-		DWORD flag = 0;
-
-		auto result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &flag, &cd->overlapped, NULL);
+		auto result = WSARecv(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.recvBytes, &cm->clientData.overlapped, NULL);
 
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 			WarningMessage("Failed to recv-data \n");
@@ -136,12 +128,6 @@ DWORD WINAPI IOCPServer::ServerOpenThread(LPVOID args) {
 		SetColorMessage("[IOCP] : Success to accept Client", ccolor::LIGHTGREEN, ccolor::BLACK);
 
 		cm = nullptr;
-
-		delete(cd);
-		cd = nullptr;
-
-		delete(dataHeader);
-		dataHeader = nullptr;
 	}
 
 	return 0;
@@ -151,14 +137,16 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 	IOCPServer* iocp = (IOCPServer*)args;
 	DWORD transBytes = 0;
 	ULONG_PTR key = NULL;
-	ClientModel* cm = new ClientModel;
-	ClientIOData* cd = new ClientIOData;
-	DataHeaders* dataHeader = new DataHeaders;
+	LPOVERLAPPED overlap = nullptr;
 
-	ZeroMemory(&cd->overlapped, sizeof(WSAOVERLAPPED));
+	DataHeaders* header = nullptr;
+	AccountInfo* ai = nullptr;
+	
+	ClientModel* cm = new ClientModel;
+	
 
 	while (true) {
-		auto result = GetQueuedCompletionStatus(iocp->iocpHandle, &transBytes, &key, (LPOVERLAPPED*)cd, INFINITE);
+		auto result = GetQueuedCompletionStatus(iocp->iocpHandle, &transBytes, &key, &overlap, INFINITE);
 
 		if (key == STOP) {
 			printf("[IOCP] : Stop Threads \n");
@@ -176,32 +164,45 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		}
 		cm = (ClientModel*)key;
 
-		
-		cd->wsaBuf.buf = cd->data;
-		cd->wsaBuf.len = sizeof(cd->data);
-		cd->recvBytes = 0;
-		cd->flag = 0;
-		
-		result = WSARecv(cm->socket, &cd->wsaBuf, 1, &cd->recvBytes, &cd->flag, &cd->overlapped, NULL);
+		result = WSARecv(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, &cm->clientData.overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
 			continue;
 		}
 
-		if (cd->wsaBuf.len <= 0 || cd->recvBytes <= 0) continue;
+#if DEBUGGING
+		printf("Translate Bytes : %d \n", transBytes);
+		printf("Recvied Bytes : %d \n", cm->clientData.recvBytes);
+#endif
 
-		dataHeader = (DataHeaders*)cd->data;
-		printf("%d \n", dataHeader->dataCnt);
-		printf("%d \n", dataHeader->dataSize);
-		printf("%d \n", dataHeader->dataType);
-		AccountInfo* ai =(AccountInfo*)(cd->data + sizeof(DataHeaders));
-		wprintf(L"%s \n",ai->birth);
-		wprintf(L"%s \n", ai->name);
-		wprintf(L"%s \n", ai->id);
-		wprintf(L"%s \n", ai->passwd);
-		memset(cd->data, 0, sizeof(cd->data));
-		//iocp->SetParsingData();
+		header = new DataHeaders;
+		ZeroMemory(header, sizeof(DataHeaders));
+
+		header = (DataHeaders*)cm->clientData.data;
+
+		switch (header->dataType) {
+		case CREATE_ACCOUNT:
+			ai = new AccountInfo;
+			ZeroMemory(ai, sizeof(AccountInfo));
+			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
+				printf("[IOCP] : Aleady exist account \n");
+				break;
+			}
+			if (iocp->bgySql->CreateAccount(*ai)) {
+				SetColorMessage("[IOCP] : Success to create account \n", ccolor::YELLOW, ccolor::BLACK);
+			}
+			break;
+		case LOGIN_ACCOUNT:
+			ZeroMemory(ai, sizeof(AccountInfo));
+			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
+				printf("[IOCP] : Login Success \n");
+			}
+			break;
+		default:
+			break;
+		}
 	}
-
 	return 0;
 }
 

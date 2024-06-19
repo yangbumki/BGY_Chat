@@ -77,12 +77,6 @@ typedef struct DATA_HEADERS {
 	unsigned char dataCnt;
 }DataHeaders;
 
-typedef struct CLEINT_MODEL {
-	SOCKET socket;
-	SOCKADDR_IN addr;
-	int addrLen;
-}ClientModel;
-
 typedef struct CLIENT_IO_DATA {
 	WSABUF wsaBuf;
 	char data[BUFSIZE];
@@ -92,7 +86,12 @@ typedef struct CLIENT_IO_DATA {
 	DWORD flag;
 }ClientIOData;
 
-
+typedef struct CLEINT_MODEL {
+	SOCKET socket;
+	SOCKADDR_IN addr;
+	int addrLen;
+	CLIENT_IO_DATA clientData;
+}ClientModel;
 
 //공통함수
 static void SetColorMessage(const char* msg, int textColor, int backgroundColor) {
@@ -118,4 +117,39 @@ static void WarningMessage(const char* msg) {
 	SetColorMessage(msg, WARNING_TEXT_COLOR, WARNING_BACKGROUND_COLOR);
 	SetColorMessage("-----------", WARNING_TEXT_COLOR, WARNING_BACKGROUND_COLOR);
 }
+
+static wchar_t* ConvertCtoWC(const char* str) {
+	wchar_t* wStr;
+
+	int strSize = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, NULL);
+	wStr = new wchar_t(strSize);
+	MultiByteToWideChar(CP_ACP, 0, str, strlen(str) + 1, wStr, strSize);
+
+	return wStr;
+}
+
+static char* ConvertWCtoC(const wchar_t* wstr) {
+	char* str;
+
+	int strSize = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, NULL, NULL, NULL);
+	str = new char(strSize);
+	WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, strSize, 0, 0);
+
+	return str;
+}
+
+static char* AddString(int num, ...) {
+	va_list ap;
+
+	char addStr[BUFSIZE] = "";
+
+	va_start(ap, num);
+	for (int i = 0; i<num; i++) {
+		strcat_s(addStr,sizeof(addStr),va_arg(ap, char*));
+	}
+	va_end(ap);
+
+	return addStr;
+}
+
 
