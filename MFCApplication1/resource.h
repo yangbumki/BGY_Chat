@@ -10,7 +10,9 @@
 #define IDR_MAINFRAME                   128
 #define IDD_SINGUP                      133
 #define IDD_MAIN_VIEW                   134
+#define MainLogo                        135
 #define MAINTITLE                       200
+#define MAIN_LOGO                       200
 #define BTN_LOGIN                       1002
 #define BTN_SIGNUP                      1003
 #define EDITBOX_ID                      1005
@@ -29,14 +31,13 @@
 #define LABEL_CREATE_ID                 1022
 #define LABEL_CREATE_PASSWORD           1023
 #define IDC_DATETIMEPICKER1             1025
-#define IDC_LOGIN_ICON                  1026
 #define IDC_LOGIN_IMAGE                 1026
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        135
+#define _APS_NEXT_RESOURCE_VALUE        136
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           101

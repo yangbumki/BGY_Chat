@@ -13,6 +13,7 @@ int main() {
 	SOCKADDR_IN addr;
 
 	DataHeaders* dh = nullptr;
+	AccountInfo* ai = nullptr;
 
 	auto result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (result < 0) exit(1);
@@ -34,25 +35,67 @@ int main() {
 	while (1) {
 		
 		if (_kbhit()) {
-			memset(cm, 0, sizeof(ClientModel));
 
-			dh = (DataHeaders*)cm->clientData.data;
-			dh->dataCnt = i;
-			dh->dataSize = i + 1;
-			dh->dataType = i + 2;
+			switch (_getch()) {
+			case 0x3B:
+				printf("---F1---\n\n");
+				ZeroMemory(cm, sizeof(ClientModel));
 
-			i++;
+				dh = (DataHeaders*)cm->clientData.data;
+				dh->dataCnt = 1;
+				dh->dataSize = sizeof(AccountInfo);
+				dh->dataType = LOGIN_ACCOUNT;
 
-			cm->clientData.wsaBuf.buf = cm->clientData.data;
-			cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
+				ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+				wcscpy_s(ai->id, sizeof("tester"), L"tester");
+				wcscpy_s(ai->passwd, sizeof("tester"), L"tester");
+				wcscpy_s(ai->name, sizeof("tester"), L"tester");
+				wcscpy_s(ai->birth, sizeof("0000.00.00"), L"0000.00.00");
 
-			printf("Clicked \n");
-			result = WSASend(*sock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
-			printf("send Byte 1 : %d \n", cm->clientData.sendBytes);
+				cm->clientData.wsaBuf.buf = cm->clientData.data;
+				cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
 
-			if (_getch() == 27)	break;
+				printf("---SEND---\n");
+				result = WSASend(*sock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
+				printf("send Byte : %d \n", cm->clientData.sendBytes);
+				ZeroMemory(cm, sizeof(ClientModel));
+
+				cm->clientData.wsaBuf.buf = cm->clientData.data;
+				cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
+
+				printf("---RECV---\n");
+				result = WSARecv(*sock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
+				if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+					std::cerr << "Failed to recv-data" << std::endl;
+					goto END;
+				}
+
+				dh = (DataHeaders*)cm->clientData.data;
+				printf("---HEADER---\n");
+				printf("TYPE : %d \n", dh->dataType);
+				printf("SIZE : %d \n", dh->dataSize);
+				printf("COUNT : %d \n", dh->dataCnt);
+
+				if (dh->dataType == DATA_TYPE::RESPOND) {
+					char* respondData = (cm->clientData.data + sizeof(DataHeaders));
+					printf("---DATA---\n");
+					if (*respondData == RespondDataType::SUCCESS)
+						printf("Respond : SUCCESS \n");
+					else
+						printf("Respond : FAIL	\n");
+				}
+				break;
+
+			case 0x1B:
+				goto END;
+				break;
+
+			default:
+				break;
+			}
 		}
 	}
-		
+END:
+
 	return 0;
 }

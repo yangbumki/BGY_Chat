@@ -142,10 +142,10 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 	DataHeaders* respondDH = nullptr;
 	ClientIOData* respondData = nullptr;
 
-//pointer 형태로 받기만 할꺼라서, 동적 생성 x
+	//pointer 형태로 받기만 할꺼라서, 동적 생성 x
 	DataHeaders* header = nullptr;
 	AccountInfo* ai = nullptr;
-	
+
 
 	while (true) {
 		auto result = GetQueuedCompletionStatus(iocp->iocpHandle, &transBytes, &key, &overlap, INFINITE);
@@ -177,7 +177,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 #endif
 
 		header = (DataHeaders*)cm->clientData.data;
-		
+		char* data = nullptr;
+
 		switch (header->dataType) {
 		case CREATE_ACCOUNT:
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
@@ -191,43 +192,46 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			break;
 		case LOGIN_ACCOUNT:
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			//Respond 변수 초기화
+			respondData = new ClientIOData;
+			ZeroMemory(respondData, sizeof(ClientIOData));
+			respondDH = (DataHeaders*)respondData->data;
+
+			respondDH->dataCnt = 1;
+			respondDH->dataSize = sizeof(ClientIOData);
+			respondDH->dataType = RESPOND;
+
+			data = (char*)(respondData->data + sizeof(DataHeaders));
+			//중복 데이터 확인
 			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
 				printf("[IOCP] : Login Success \n");
-
-				respondDH = new DataHeaders;
-				ZeroMemory(respondDH, sizeof(DataHeaders));
-
-				respondData = new ClientIOData;
-				ZeroMemory(respondData, sizeof(ClientIOData));
-
-				respondDH->dataCnt = 1;
-				respondDH->dataSize = sizeof(ClientIOData);
-				respondDH->dataType = RespondDataType::SUCCESS;
-
-				respondData->wsaBuf.buf = respondData->data;
-				respondData->wsaBuf.len = sizeof(respondData->data);
-
-				result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
-				if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
-					WarningMessage("[IOCP] : Failed to send respond-data");
-					continue;
-				}
-
-				std::cout << "[IOCP] : Success to send respond-data" << std::endl;
-
-				if(respondData == nullptr) 
-					delete(respondData);
-				if (respondDH == nullptr)
-					delete(respondDH);
+				*data = RESPOND_DATA_TYPE::SUCCESS;
 			}
-			break;
+			else *data = RESPOND_DATA_TYPE::FAIL;
+
+			respondData->wsaBuf.buf = respondData->data;
+			respondData->wsaBuf.len = sizeof(respondData->data);
+
+			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to send respond-data");
+				continue;
+			}
+
+			std::cout << "[IOCP] : Success to send respond-data" << std::endl;
+
+			if (respondData == nullptr)
+				delete(respondData);
+			if (respondDH == nullptr)
+				delete(respondDH);
+		break;
 
 		default:
 			break;
-		}
 	}
-	
-	return 0;
+}
+
+return 0;
 }
 
 bool IOCPServer::CreateWorker(int workerCnt) {

@@ -12,6 +12,8 @@
 #include <thread>
 
 //전처리
+#define ERROR						-1
+
 #define BUFSIZE						1024
 
 #define MAX_ACCOUNT_LEN				128

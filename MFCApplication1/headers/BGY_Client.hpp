@@ -116,16 +116,14 @@ public:
 	}
 
 	int RespondData() {
-		ZeroMemory(cm->clientData.data, sizeof(cm->clientData.data));
+		ZeroMemory(cm, sizeof(ClientModel));
 
-		auto result = WSARecv(*this->serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
-		if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
-			WarningMessage("[CLIENT] : Failed to respond-data");
+		cm->clientData.wsaBuf.buf = cm->clientData.data;
+
+		auto result = WSARecv(*serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
+		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
+			ErrorMessage("[CLIENT] : Failed to recv-respond");
 			return ERROR;
-		}
-
-		if (cm->clientData.recvBytes <= 0) {
-			return RespondDataType::FAIL;
 		}
 
 		DataHeaders* dh = (DataHeaders*)cm->clientData.data;

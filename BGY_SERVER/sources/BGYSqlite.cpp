@@ -23,6 +23,7 @@ bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
 	auto result = sqlite3_prepare(db, sqlCmd, -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
 		WarningMessage("Failed to prepare db");
+		sqlite3_finalize(stmt);
 		return false;
 	}
 
@@ -36,11 +37,12 @@ bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
 			result = wcsncmp(ai.id, wideID, wcslen(ai.id));
 			if (result == 0) {
 				WarningMessage("[SQL] : Duplicated account");
+				sqlite3_finalize(stmt);
 				return true;
 			}
 		}
 	}
-
+	sqlite3_finalize(stmt);
 	return false;
 }
 
@@ -59,10 +61,12 @@ bool BGYSqlite::CreateAccount(DB_ACCOUNT_INFO ai) {
 	auto result = sqlite3_prepare(db, addStr.c_str(), -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
 		WarningMessage("Failed to prepare db");
+		sqlite3_finalize(stmt);
 		return false;
 	}
 
 	while (sqlite3_step(stmt) != SQLITE_DONE) {};
 
+	sqlite3_finalize(stmt);
 	return true;
 }

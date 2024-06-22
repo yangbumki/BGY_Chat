@@ -1,4 +1,4 @@
-﻿
+﻿v
 // MFCApplication1Dlg.cpp: 구현 파일
 //
 
@@ -89,21 +89,16 @@ bool LOGIN_VIEW::InitMainLogo(const wchar_t* path) {
 
 	CRect rect;
 	mainImageControl->GetWindowRect(rect);
-	
-	CDC* dc;
-	dc = mainImageControl->GetDC();
 
-	CImage image;
+	static CImage image;
 	auto result = image.Load(path);
 	if (result != S_OK) {
 		return false;
 	}
 	if (!image.IsNull()) {
-		image.BitBlt(dc->m_hDC, 0, 0);
-		image.StretchBlt(dc->m_hDC, 0, 0, rect.Width(), rect.Height(), SRCCOPY);
+		//image.BitBlt(dc->m_hDC, 0, 0);
+		image.Draw(mainImageControl->GetDC()->m_hDC, 0, 0, image.GetWidth(), image.GetHeight());
 	}
-
-	ReleaseDC(dc);
 	
 	return true;
 }
@@ -140,7 +135,7 @@ BOOL LOGIN_VIEW::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
 	SetWindowTextW(dlgTitle);
-	InitMainLogo(L"C:\\Users\\bgyang\\Desktop\\sourcecode\\BChat\\MFCApplication1\\image\\MainLogo.bmp");
+	InitMainLogo(L"image\\MainLogo.bmp");
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -231,9 +226,7 @@ void LOGIN_VIEW::OnBnClickedLogin()
 
 	client->SendData(dh, ai);
 
-	if (client->RespondData() == RespondDataType::SUCCESS) {
-		MessageBox(L"로그인에 성공했습니다.", L"로그인");
-	}
+	if (client->RespondData() == RespondDataType::SUCCESS) MessageBox(L"로그인에 성공했습니다.", L"로그인");
 
 	delete(dh);
 	delete(ai);
