@@ -115,6 +115,38 @@ public:
 		return true;
 	}
 
+	int RespondData() {
+		ZeroMemory(cm->clientData.data, sizeof(cm->clientData.data));
+
+		auto result = WSARecv(*this->serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
+		if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+			WarningMessage("[CLIENT] : Failed to respond-data");
+			return ERROR;
+		}
+
+		if (cm->clientData.recvBytes <= 0) {
+			return RespondDataType::FAIL;
+		}
+
+		DataHeaders* dh = (DataHeaders*)cm->clientData.data;
+
+		if (dh->dataType == DataType::RESPOND) {
+			auto data = (cm->clientData.data + sizeof(DataHeaders));
+			
+			if (*data == RespondDataType::SUCCESS) {
+				return RespondDataType::SUCCESS;
+			}
+			else if (*data == RespondDataType::FAIL) {
+				return RespondDataType::FAIL;
+			}
+		}
+
+		WarningMessage("[CLIENT] : Diffrent Data type");
+		WarningMessage("[CLIENT] : Check your code");
+
+		return ERROR;
+	}
+
 	int GetServerStat() {
 		return this->serverInfoStat;
 	}

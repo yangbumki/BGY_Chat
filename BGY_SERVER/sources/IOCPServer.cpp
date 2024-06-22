@@ -138,11 +138,13 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 	DWORD transBytes = 0;
 	ULONG_PTR key = NULL;
 	LPOVERLAPPED overlap = nullptr;
+	ClientModel* cm = new ClientModel;
+	DataHeaders* respondDH = nullptr;
+	ClientIOData* respondData = nullptr;
 
+//pointer 형태로 받기만 할꺼라서, 동적 생성 x
 	DataHeaders* header = nullptr;
 	AccountInfo* ai = nullptr;
-	
-	ClientModel* cm = new ClientModel;
 	
 
 	while (true) {
@@ -174,15 +176,10 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		printf("Recvied Bytes : %d \n", cm->clientData.recvBytes);
 #endif
 
-		header = new DataHeaders;
-		ZeroMemory(header, sizeof(DataHeaders));
-
 		header = (DataHeaders*)cm->clientData.data;
-
+		
 		switch (header->dataType) {
 		case CREATE_ACCOUNT:
-			ai = new AccountInfo;
-			ZeroMemory(ai, sizeof(AccountInfo));
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
 				printf("[IOCP] : Aleady exist account \n");
@@ -193,16 +190,43 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			}
 			break;
 		case LOGIN_ACCOUNT:
-			ZeroMemory(ai, sizeof(AccountInfo));
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
 				printf("[IOCP] : Login Success \n");
+
+				respondDH = new DataHeaders;
+				ZeroMemory(respondDH, sizeof(DataHeaders));
+
+				respondData = new ClientIOData;
+				ZeroMemory(respondData, sizeof(ClientIOData));
+
+				respondDH->dataCnt = 1;
+				respondDH->dataSize = sizeof(ClientIOData);
+				respondDH->dataType = RespondDataType::SUCCESS;
+
+				respondData->wsaBuf.buf = respondData->data;
+				respondData->wsaBuf.len = sizeof(respondData->data);
+
+				result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+				if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+					WarningMessage("[IOCP] : Failed to send respond-data");
+					continue;
+				}
+
+				std::cout << "[IOCP] : Success to send respond-data" << std::endl;
+
+				if(respondData == nullptr) 
+					delete(respondData);
+				if (respondDH == nullptr)
+					delete(respondDH);
 			}
 			break;
+
 		default:
 			break;
 		}
 	}
+	
 	return 0;
 }
 

@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "afxdialogex.h"
 
-
 // SignupDlg 대화 상자
 
 class SignupDlg : public CDialogEx

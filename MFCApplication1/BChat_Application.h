@@ -15,12 +15,12 @@
 // 이 클래스의 구현에 대해서는 MFCApplication1.cpp을(를) 참조하세요.
 //
 
-class CMFCApplication1App : public CWinApp
+typedef class BCHAT_APPLICATION : public CWinApp
 {
 private:
 	BgyClient* client = nullptr;
 public:
-	CMFCApplication1App();
+	BCHAT_APPLICATION();
 
 // 재정의입니다.
 public:
@@ -29,6 +29,6 @@ public:
 // 구현입니다.
 
 	DECLARE_MESSAGE_MAP()
-};
+}BChatApplication;
 
-extern CMFCApplication1App theApp;
+extern BCHAT_APPLICATION theApp;

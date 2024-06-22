@@ -4,8 +4,8 @@
 
 #include "pch.h"
 #include "framework.h"
-#include "MFCApplication1.h"
-#include "MFCApplication1Dlg.h"
+#include "BCHAT_APPLICATION.h"
+#include "LoginView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -14,14 +14,14 @@
 
 // CMFCApplication1App
 
-BEGIN_MESSAGE_MAP(CMFCApplication1App, CWinApp)
+BEGIN_MESSAGE_MAP(BCHAT_APPLICATION, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
 // CMFCApplication1App 생성
 
-CMFCApplication1App::CMFCApplication1App()
+BCHAT_APPLICATION::BCHAT_APPLICATION()
 {
 	// 다시 시작 관리자 지원
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
@@ -37,12 +37,12 @@ CMFCApplication1App::CMFCApplication1App()
 
 // 유일한 CMFCApplication1App 개체입니다.
 
-CMFCApplication1App theApp;
+BCHAT_APPLICATION theApp;
 
 
 // CMFCApplication1App 초기화
 
-BOOL CMFCApplication1App::InitInstance()
+BOOL BCHAT_APPLICATION::InitInstance()
 {
 	// 애플리케이션 매니페스트가 ComCtl32.dll 버전 6 이상을 사용하여 비주얼 스타일을
 	// 사용하도록 지정하는 경우, Windows XP 상에서 반드시 InitCommonControlsEx()가 필요합니다.
@@ -75,7 +75,7 @@ BOOL CMFCApplication1App::InitInstance()
 	// 적절한 내용으로 수정해야 합니다.
 	SetRegistryKey(_T("로컬 애플리케이션 마법사에서 생성된 애플리케이션"));
 
-	CMFCApplication1Dlg dlg(client);
+	LOGIN_VIEW dlg(client);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == -1)

@@ -10,7 +10,7 @@ class BGYSqlite
 {
 private:
 	sqlite3* db			= nullptr;
-	sqlite3_stmt* stmt	= nullptr;
+	sqlite3_stmt* stmt;
 
 public:
 	BGYSqlite(const char* dbName);

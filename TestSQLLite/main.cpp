@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 int callback(void* data, int argc, char** argv, char** azColName) {
 	int i;
 	std::cout << (const char*)data << ":" << std::endl;
@@ -64,8 +66,29 @@ int main() {
 
 	//sqlite3_finalize(sqlStat);
 	//sqlite3_close(db);
-	auto str = AddString(3, "Hello", "Im", "Tester");
-	printf("%s \n", str);
+
+	sqlite3* db;
+	auto result = sqlite3_open("test.db", &db);
+	if (result != SQLITE_OK) {
+		cerr << "sqlite3_open" << endl;
+		return -1;
+	}
+
+	sqlite3_stmt* stmt;
+
+	const char* sql = "insert into users values('tester','tester','tester','tester')";
+
+	result = sqlite3_prepare(db, sql, -1, &stmt, nullptr);
+	if (result != SQLITE_OK) {
+		cerr << "sqlite3_prepare" << endl;
+		return -1;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE) {
+
+	}
+
+	printf("Sucess to Insert values \n");
 
 	return 0;
 }

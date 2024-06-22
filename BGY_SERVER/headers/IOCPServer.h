@@ -42,11 +42,12 @@ public:
 	IOCPServer(u_int serverPort,BGYSqlite* sql);
 	~IOCPServer();
 
+	
+
 	bool ServerOpen();
 	bool ServerStop();
 	bool ServerRestart();
 
 	bool SetParsingData();
-	
 };
 

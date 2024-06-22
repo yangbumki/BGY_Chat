@@ -14,7 +14,7 @@ BGYSqlite::BGYSqlite(const char* dbName) {
 }
 
 BGYSqlite::~BGYSqlite() {
-	if(stat != nullptr) sqlite3_finalize(stmt);
+	if(stmt != nullptr) sqlite3_finalize(stmt);
 	if(db != nullptr) sqlite3_close(db);
 }
 
@@ -26,7 +26,7 @@ bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
 		return false;
 	}
 
-	while (sqlite3_step(stmt) != SQLITE_DONE) {
+	while(sqlite3_step(stmt) != SQLITE_DONE) {
 		int maxCol = sqlite3_column_count(stmt);
 
 		for (int col = 0; col < maxCol; col++) {
@@ -45,8 +45,6 @@ bool BGYSqlite::GetDuplicatedAccount(AccountInfo ai) {
 }
 
 bool BGYSqlite::CreateAccount(DB_ACCOUNT_INFO ai) {
-	if (GetDuplicatedAccount(ai)) return false;
-
 	char* sQuote = (char*)"\'";
 	char* comma = (char*)",";
 
@@ -58,11 +56,13 @@ bool BGYSqlite::CreateAccount(DB_ACCOUNT_INFO ai) {
 	char* sql = (char*)"insert into users values(";
 	auto addStr = AddString(17, sql,sQuote, id, sQuote, comma, sQuote, passwd, sQuote, comma, sQuote, name, sQuote, comma, sQuote,birth, sQuote, ")");
 
-	auto result = sqlite3_prepare(db, addStr, -1, &stmt, nullptr);
+	auto result = sqlite3_prepare(db, addStr.c_str(), -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
 		WarningMessage("Failed to prepare db");
 		return false;
 	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE) {};
 
 	return true;
 }

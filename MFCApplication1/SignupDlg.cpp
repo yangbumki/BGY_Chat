@@ -2,7 +2,7 @@
 //
 
 #include "pch.h"
-#include "MFCApplication1.h"
+#include "BCHAT_APPLICATION.h"
 #include "afxdialogex.h"
 #include "SignupDlg.h"
 

@@ -4,22 +4,28 @@
 
 #pragma once
 
+#include <atlimage.h>
 #include "SignupDlg.h"
 
 
 // CMFCApplication1Dlg 대화 상자
-class CMFCApplication1Dlg : public CDialogEx
+typedef class LOGIN_VIEW : public CDialogEx
 {
 // 생성입니다.
 public:
-	CMFCApplication1Dlg(BgyClient* pClient, CWnd* pParent = nullptr);	// 표준 생성자입니다.
+	LOGIN_VIEW(BgyClient* pClient, CWnd* pParent = nullptr);	// 표준 생성자입니다.
 
 // 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFCAPPLICATION1_DIALOG };
 #endif
 private:
-	BgyClient* client = nullptr;
+	BgyClient* client			= nullptr;
+	CStatic* mainImageControl	= nullptr;
+	CEdit* loginIDEditBox		= nullptr;
+	CEdit* loginPasswdEditBox	= nullptr;
+	
+	bool InitMainLogo(const wchar_t* path);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 지원입니다.
@@ -40,4 +46,4 @@ protected:
 public:
 	afx_msg void OnBnClickedLogin();
 	afx_msg void OnBnClickedSignUp();
-};
+}LoginView;

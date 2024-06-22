@@ -4,8 +4,8 @@
 
 #include "pch.h"
 #include "framework.h"
-#include "MFCApplication1.h"
-#include "MFCApplication1Dlg.h"
+#include "BCHAT_APPLICATION.h"
+#include "LoginView.h"
 #include "afxdialogex.h"
 
 #ifdef _DEBUG
@@ -40,41 +40,75 @@ CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CMFCApplication1Dlg 대화 상자
+// LOGIN_VIEW 대화 상자
 
 
 
-CMFCApplication1Dlg::CMFCApplication1Dlg(BgyClient* pClient, CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_MFCAPPLICATION1_DIALOG, pParent), client(pClient)
+LOGIN_VIEW::LOGIN_VIEW(BgyClient* pClient, CWnd* pParent /*=nullptr*/)
+	: CDialogEx(IDD_LOGIN_VIEW, pParent), client(pClient)
 {
+	
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	mainImageControl = new CStatic;
+	loginIDEditBox = new CEdit;
+	loginPasswdEditBox= new CEdit;
+
 	dlgTitle.LoadString(MAINTITLE);
 
 }
 
-void CMFCApplication1Dlg::DoDataExchange(CDataExchange* pDX)
+void LOGIN_VIEW::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
+	
+	DDX_Control(pDX, IDC_LOGIN_IMAGE, *mainImageControl);
+	DDX_Control(pDX, EDITBOX_ID, *loginIDEditBox);
+	DDX_Control(pDX, EDITBOX_PASSWORD, *loginPasswdEditBox);
 }
 
-BEGIN_MESSAGE_MAP(CMFCApplication1Dlg, CDialogEx)
+BEGIN_MESSAGE_MAP(LOGIN_VIEW, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(BTN_LOGIN, &CMFCApplication1Dlg::OnBnClickedLogin)
-	ON_BN_CLICKED(BTN_SIGNUP, &CMFCApplication1Dlg::OnBnClickedSignUp)
+	ON_BN_CLICKED(BTN_LOGIN, &LOGIN_VIEW::OnBnClickedLogin)
+	ON_BN_CLICKED(BTN_SIGNUP, &LOGIN_VIEW::OnBnClickedSignUp)
 END_MESSAGE_MAP()
 
 
-// CMFCApplication1Dlg 메시지 처리기
+// LOGIN_VIEW 메시지 처리기
+bool LOGIN_VIEW::InitMainLogo(const wchar_t* path) {
+	if (mainImageControl == nullptr) return false;
 
-BOOL CMFCApplication1Dlg::OnInitDialog()
+	CRect rect;
+	mainImageControl->GetWindowRect(rect);
+	
+	CDC* dc;
+	dc = mainImageControl->GetDC();
+
+	CImage image;
+	auto result = image.Load(path);
+	if (result != S_OK) {
+		return false;
+	}
+	if (!image.IsNull()) {
+		image.BitBlt(dc->m_hDC, 0, 0);
+		image.StretchBlt(dc->m_hDC, 0, 0, rect.Width(), rect.Height(), SRCCOPY);
+	}
+
+	ReleaseDC(dc);
+	
+	return true;
+}
+
+BOOL LOGIN_VIEW::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -104,12 +138,14 @@ BOOL CMFCApplication1Dlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+
 	SetWindowTextW(dlgTitle);
+	InitMainLogo(L"C:\\Users\\bgyang\\Desktop\\sourcecode\\BChat\\MFCApplication1\\image\\MainLogo.bmp");
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
-void CMFCApplication1Dlg::OnSysCommand(UINT nID, LPARAM lParam)
+void LOGIN_VIEW::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
@@ -126,7 +162,7 @@ void CMFCApplication1Dlg::OnSysCommand(UINT nID, LPARAM lParam)
 //  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 애플리케이션의 경우에는
 //  프레임워크에서 이 작업을 자동으로 수행합니다.
 
-void CMFCApplication1Dlg::OnPaint()
+void LOGIN_VIEW::OnPaint()
 {
 	if (IsIconic())
 	{
@@ -153,21 +189,58 @@ void CMFCApplication1Dlg::OnPaint()
 
 // 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
 //  이 함수를 호출합니다.
-HCURSOR CMFCApplication1Dlg::OnQueryDragIcon()
+HCURSOR LOGIN_VIEW::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
 
 
-void CMFCApplication1Dlg::OnBnClickedLogin()
+void LOGIN_VIEW::OnBnClickedLogin()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	CString idText,
+			passwdText;
 
+	loginIDEditBox->GetWindowTextW(idText);
+	//auto idCStr = ConvertWCtoC(idText.GetString());
+	if (idText.GetLength() == NULL) {
+		MessageBox(L"아이디를 입력하세요", L"로그인");
+		return;
+	}
+
+	loginPasswdEditBox->GetWindowTextW(passwdText);
+	//auto passwdStr = ConvertWCtoC(passwdText.GetString());
+	if (passwdText.GetLength() == NULL) {
+		MessageBox(L"패스워드를 입력하세요", L"로그인");
+		return;
+	}
+
+	AccountInfo* ai = new AccountInfo;
+	ZeroMemory(ai, sizeof(AccountInfo));
+	
+	wcscpy_s(ai->id, idText.GetLength()+1, idText.GetString());
+	wcscpy_s(ai->passwd, passwdText.GetLength()+1, passwdText.GetString());
+	
+	DataHeaders* dh = new DataHeaders;
+	ZeroMemory(dh, sizeof(DataHeaders));
+
+	dh->dataType = DataType::LOGIN_ACCOUNT;
+	dh->dataCnt = 1;
+	dh->dataSize = sizeof(AccountInfo);
+
+	client->SendData(dh, ai);
+
+	if (client->RespondData() == RespondDataType::SUCCESS) {
+		MessageBox(L"로그인에 성공했습니다.", L"로그인");
+	}
+
+	delete(dh);
+	delete(ai);
 }
 
 
-void CMFCApplication1Dlg::OnBnClickedSignUp()
+void LOGIN_VIEW::OnBnClickedSignUp()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	SignupDlg* sd = nullptr;

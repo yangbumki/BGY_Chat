@@ -61,7 +61,13 @@ typedef enum CMD_COLOR {
 typedef enum DATA_TYPE {
 	CREATE_ACCOUNT = 0,
 	LOGIN_ACCOUNT,
+	RESPOND,
 }DataType;
+
+typedef enum RESPOND_DATA_TYPE {
+	SUCCESS = 0,
+	FAIL
+}RespondDataType;
 
 //공통구조체
 typedef struct DB_ACCOUNT_INFO {
@@ -138,8 +144,9 @@ static char* ConvertWCtoC(const wchar_t* wstr) {
 	return str;
 }
 
-static char* AddString(int num, ...) {
+static std::string AddString(int num, ...) {
 	va_list ap;
+	std::string addString;
 
 	char addStr[BUFSIZE] = "";
 
@@ -149,7 +156,9 @@ static char* AddString(int num, ...) {
 	}
 	va_end(ap);
 
-	return addStr;
+	addString.append(addStr);
+
+	return addString;
 }
 
 
