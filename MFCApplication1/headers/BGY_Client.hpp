@@ -119,6 +119,7 @@ public:
 		ZeroMemory(cm, sizeof(ClientModel));
 
 		cm->clientData.wsaBuf.buf = cm->clientData.data;
+		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
 
 		auto result = WSARecv(*serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {

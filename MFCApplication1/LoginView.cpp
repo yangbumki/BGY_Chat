@@ -1,5 +1,4 @@
-﻿v
-// MFCApplication1Dlg.cpp: 구현 파일
+﻿// MFCApplication1Dlg.cpp: 구현 파일
 //
 
 #include "pch.h"
@@ -135,7 +134,7 @@ BOOL LOGIN_VIEW::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
 	SetWindowTextW(dlgTitle);
-	InitMainLogo(L"image\\MainLogo.bmp");
+	//InitMainLogo(L"image\\MainLogo.bmp");
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -226,7 +225,13 @@ void LOGIN_VIEW::OnBnClickedLogin()
 
 	client->SendData(dh, ai);
 
-	if (client->RespondData() == RespondDataType::SUCCESS) MessageBox(L"로그인에 성공했습니다.", L"로그인");
+	if (client->RespondData() == RespondDataType::SUCCESS) {
+		MessageBox(L"로그인에 성공했습니다.", L"로그인");
+		this->ShowWindow(SW_HIDE);
+
+		mv = new MainView(this->client, this);
+		mv->Create(IDD_MAIN_VIEW, this);
+	}
 
 	delete(dh);
 	delete(ai);

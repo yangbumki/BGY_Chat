@@ -17,6 +17,7 @@
 #define BUFSIZE						1024
 
 #define MAX_ACCOUNT_LEN				128
+#define MAX_ADD_STRING_LEN			128
 
 #define ERROR_TEXT_COLOR			4
 #define ERROR_BACKGROUND_COLOR		0
@@ -162,5 +163,3 @@ static std::string AddString(int num, ...) {
 
 	return addString;
 }
-
-

@@ -188,6 +188,7 @@
     <ClInclude Include="headers\BGY_Client.hpp" />
     <ClInclude Include="BChat_Application.h" />
     <ClInclude Include="LoginView.h" />
+    <ClInclude Include="MainView.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SignupDlg.h" />
@@ -196,6 +197,7 @@
   <ItemGroup>
     <ClCompile Include="BChat_Application.cpp" />
     <ClCompile Include="LoginView.cpp" />
+    <ClCompile Include="MainView.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

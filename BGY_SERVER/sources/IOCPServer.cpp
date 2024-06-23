@@ -155,26 +155,29 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			break;
 		}
 
-		if (!result) {
+		if (!result || transBytes <= 0) {
 			int error = WSAGetLastError();
 			if (error == DISCONNECTION) {
-				SetColorMessage("[IOCP] : AbnormaZl Disconnection", ccolor::RED, ccolor::BLACK);
-				break;
+				SetColorMessage("[IOCP] : Abnormal Disconnection", ccolor::RED, ccolor::BLACK);
+				continue;
 			}
 			printf("WSAGetLastError : %d \n", WSAGetLastError());
 			continue;
 		}
+
 		cm = (ClientModel*)key;
 
 		result = WSARecv(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, &cm->clientData.overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
-			continue;
+			WarningMessage("[IOCP] : Failed to wsa-recv");
+			break;
 		}
 
 #if DEBUGGING
 		printf("Translate Bytes : %d \n", transBytes);
 		printf("Recvied Bytes : %d \n", cm->clientData.recvBytes);
 #endif
+		
 
 		header = (DataHeaders*)cm->clientData.data;
 		char* data = nullptr;

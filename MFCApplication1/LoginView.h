@@ -1,17 +1,23 @@
-﻿
-// MFCApplication1Dlg.h: 헤더 파일
-//
-
-#pragma once
+﻿#pragma once
 
 #include <atlimage.h>
 #include "SignupDlg.h"
+#include "MainView.h"
 
 
 // CMFCApplication1Dlg 대화 상자
 typedef class LOGIN_VIEW : public CDialogEx
 {
 // 생성입니다.
+private:
+	BgyClient* client = nullptr;
+	CStatic* mainImageControl = nullptr;
+	CEdit* loginIDEditBox = nullptr;
+	CEdit* loginPasswdEditBox = nullptr;
+	MainView* mv = nullptr;
+
+	bool InitMainLogo(const wchar_t* path);
+
 public:
 	LOGIN_VIEW(BgyClient* pClient, CWnd* pParent = nullptr);	// 표준 생성자입니다.
 
@@ -19,13 +25,6 @@ public:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFCAPPLICATION1_DIALOG };
 #endif
-private:
-	BgyClient* client			= nullptr;
-	CStatic* mainImageControl	= nullptr;
-	CEdit* loginIDEditBox		= nullptr;
-	CEdit* loginPasswdEditBox	= nullptr;
-	
-	bool InitMainLogo(const wchar_t* path);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 지원입니다.

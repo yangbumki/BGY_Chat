@@ -11,6 +11,7 @@
 #define IDD_SINGUP                      133
 #define IDD_MAIN_VIEW                   134
 #define MainLogo                        135
+#define IDR_ACCELERATOR1                136
 #define MAINTITLE                       200
 #define MAIN_LOGO                       200
 #define BTN_LOGIN                       1002
@@ -32,14 +33,22 @@
 #define LABEL_CREATE_PASSWORD           1023
 #define IDC_DATETIMEPICKER1             1025
 #define IDC_LOGIN_IMAGE                 1026
+#define TAB_VIEW                        1027
+#define FRIEND_LIST                     1029
+#define FRIEND_AREA                     1030
+#define ADD_FRIEND_BTN                  1031
+#define TALK_BTN                        1032
+#define IDC_BUTTON3                     1033
+#define LOGOUT_BTN                      1033
+#define STATUS_NAME                     1034
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        136
-#define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_RESOURCE_VALUE        137
+#define _APS_NEXT_COMMAND_VALUE         32772
+#define _APS_NEXT_CONTROL_VALUE         1035
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
