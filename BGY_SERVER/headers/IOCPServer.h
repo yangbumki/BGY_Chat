@@ -38,6 +38,9 @@ private:
 
 	bool CreateWorker(int workerCnt = 0);
 
+	template <typename T>
+	bool SendData(DataHeaders* dh, T* data);
+
 public:
 	IOCPServer(u_int serverPort,BGYSqlite* sql);
 	~IOCPServer();

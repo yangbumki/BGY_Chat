@@ -28,6 +28,11 @@ bool MainView::SetFirendGridView(bool set) {
 	
 	friendArea.ShowWindow(status);
 	friendListBox.ShowWindow(status);
+	statusNameLabel.ShowWindow(status);
+	addFriendBtn.ShowWindow(status);
+	talkBtn.ShowWindow(status);
+	logoutBtn.ShowWindow(status);
+	logoImg.ShowWindow(status);
 
 	return true;
 }
@@ -59,6 +64,7 @@ void MainView::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ADD_FRIEND_BTN, addFriendBtn);
 	DDX_Control(pDX, TALK_BTN, talkBtn);
 	DDX_Control(pDX, LOGOUT_BTN, logoutBtn);
+	DDX_Control(pDX, IDC_LOGIN_IMAGE, logoImg);
 }
 
 

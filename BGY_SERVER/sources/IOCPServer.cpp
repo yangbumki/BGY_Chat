@@ -228,6 +228,9 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			if (respondDH == nullptr)
 				delete(respondDH);
 		break;
+		case FRIEND_INFO:
+			
+			break;
 
 		default:
 			break;
@@ -261,6 +264,10 @@ bool IOCPServer::CreateWorker(int workerCnt) {
 	}
 
 	return true;
+}
+template <typename T>
+bool IOCPServer::SendData(DataHeaders* dh, T* data,) {
+	
 }
 bool IOCPServer::ServerOpen() {
 	if (!cModels.empty()) {

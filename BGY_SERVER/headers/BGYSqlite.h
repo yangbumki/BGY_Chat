@@ -16,7 +16,8 @@ public:
 	BGYSqlite(const char* dbName);
 	~BGYSqlite();
 
-	bool GetDuplicatedAccount(DB_ACCOUNT_INFO ai);
-	bool CreateAccount(DB_ACCOUNT_INFO ai);
+	bool GetDuplicatedAccount(const DB_ACCOUNT_INFO ai);
+	bool CreateAccount(const DB_ACCOUNT_INFO ai);
+	std::vector<FRIENDINFO> GetFriendInfo(const DB_ACCOUNT_INFO ai);
 };
 

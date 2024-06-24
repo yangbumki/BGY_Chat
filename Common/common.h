@@ -19,6 +19,8 @@
 #define MAX_ACCOUNT_LEN				128
 #define MAX_ADD_STRING_LEN			128
 
+#define DATABASE_INTERVAL_TIME		100
+
 #define ERROR_TEXT_COLOR			4
 #define ERROR_BACKGROUND_COLOR		0
 #define WARNING_TEXT_COLOR			14
@@ -64,6 +66,7 @@ typedef enum CMD_COLOR {
 typedef enum DATA_TYPE {
 	CREATE_ACCOUNT = 0,
 	LOGIN_ACCOUNT,
+	FRIEND_INFO,
 	RESPOND,
 }DataType;
 
@@ -72,7 +75,20 @@ typedef enum RESPOND_DATA_TYPE {
 	FAIL
 }RespondDataType;
 
+typedef enum FRIEND_INFO_TYPE {
+	USERNAME = 0,
+	FRINEDING,
+	REQUEST,
+	TOTALCNT,
+}FrinedInfoType, FRIENDINFOTYPE;
+
 //공통구조체
+typedef struct DB_FRINED_INFO {
+	std::string userName;
+	bool friending;
+	bool request;
+}FriendInfo, FRIENDINFO;
+
 typedef struct DB_ACCOUNT_INFO {
 	wchar_t id[MAX_ACCOUNT_LEN];
 	wchar_t passwd[MAX_ACCOUNT_LEN];
@@ -162,4 +178,27 @@ static std::string AddString(int num, ...) {
 	addString.append(addStr);
 
 	return addString;
+}
+
+static const char* strSeparator = "%s";
+
+static std::string AddString(std::string args, ...) {
+	va_list ap;
+
+	va_start(ap, args);
+
+	size_t pos = 0;
+
+	while (1) {
+		pos = args.find(strSeparator, pos);
+		if (pos == -1) {
+			break;
+		}
+		
+		args.replace(pos, strlen(strSeparator), "");
+		auto tmpStr = va_arg(ap, char*);
+		args.insert(pos, tmpStr);
+	}
+
+	return args;
 }
