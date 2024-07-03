@@ -6,6 +6,8 @@
 
 #pragma comment(lib, "winsqlite3.lib")
 
+#define STR_SAME		0
+
 class BGYSqlite
 {
 private:
@@ -18,6 +20,7 @@ public:
 
 	bool GetDuplicatedAccount(const DB_ACCOUNT_INFO ai);
 	bool CreateAccount(const DB_ACCOUNT_INFO ai);
+	bool GetAccountInfo(AccountInfo*);
 	std::vector<FRIENDINFO> GetFriendInfo(const DB_ACCOUNT_INFO ai);
 };
 

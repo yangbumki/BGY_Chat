@@ -226,6 +226,7 @@ void LOGIN_VIEW::OnBnClickedLogin()
 	client->SendData(dh, ai);
 
 	if (client->RespondData() == RespondDataType::SUCCESS) {
+		client->RecvData(ai);
 		MessageBox(L"로그인에 성공했습니다.", L"로그인");
 		this->ShowWindow(SW_HIDE);
 

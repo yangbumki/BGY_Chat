@@ -220,13 +220,32 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				WarningMessage("[IOCP] : Failed to send respond-data");
 				break;
 			}
+			//AccountInfo 정보 전달
+			if(!iocp->bgySql->GetAccountInfo(ai)) {
+				WarningMessage("[IOCP] : Failed to send account-info");
+				delete(respondData);
+				continue;
+			}
+			
+			ZeroMemory(respondData, sizeof(ClientIOData));
+			respondData->wsaBuf.buf = respondData->data;
+			respondData->wsaBuf.len = sizeof(respondData->data);
 
-			std::cout << "[IOCP] : Success to send respond-data" << std::endl;
+			memcpy(respondData->data, ai, sizeof(AccountInfo));
+
+			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to send account-info");
+				break;
+			}
+
+			std::cout << "[IOCP] : Success to send account-info" << std::endl;
 
 			if (respondData != nullptr)
 				delete(respondData);
 			break;
 		case REQUEST_FRIEND_INFO:{
+			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			//Respond 변수 초기화
 			respondData = new ClientIOData;
 			ZeroMemory(respondData, sizeof(ClientIOData));
@@ -260,12 +279,30 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			auto friendInfos = iocp->bgySql->GetFriendInfo(*ai);
+			//친구 목록이 없을 경우
+			/*if (friendInfos.size() <= 0) {
+				
+			}*/
+
+			respondDH = (DataHeaders*)respondData->data;
+
+			respondDH->dataCnt = friendInfos.size();
+			respondDH->dataSize = sizeof(ClientIOData);
+			respondDH->dataType = RESPOND_FRIEND_INFO;
 
 			FriendInfo* friendInfo = nullptr;
 			for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
 				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders));
 				memcpy(friendInfo, &friendInfos[cnt], sizeof(FriendInfo));
 			}
+			
+			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to send respond-data");
+				break;
+			}
+			
+			std::cout << "[IOCP] : Success to send friend-info" << std::endl;
 
 			if (respondData != nullptr)
 				delete(respondData);

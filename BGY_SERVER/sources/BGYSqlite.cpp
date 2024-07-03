@@ -80,25 +80,79 @@ bool BGYSqlite::CreateAccount(const DB_ACCOUNT_INFO ai) {
 	return true;
 }
 
+bool BGYSqlite::GetAccountInfo(AccountInfo* ai) {
+
+	std::string sql = "select * from users";
+
+	auto result = sqlite3_prepare(this->db, sql.c_str(), -1, &stmt, nullptr);
+	if (result != SQLITE_OK) {
+		WarningMessage("[SQL] Failed to get account-info");
+		sqlite3_finalize(stmt);
+		return false;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE) {
+		int maxColCnt = sqlite3_column_count(stmt);
+		if (maxColCnt <= 0) {
+			WarningMessage("[SQL] This data not exist.");
+			ai = nullptr;
+			sqlite3_finalize(stmt);
+			return true;
+		}
+
+		for (int col = 0; col < maxColCnt; col++) {
+			switch (sqlite3_column_type(stmt, col)) {
+			case SQLITE_TEXT: {
+				auto currentData = sqlite3_column_text(stmt, col);
+				auto parsingData = ConvertCtoWC((const char*)currentData);
+
+				result = wcscmp(parsingData, ai->id);
+				if (result == STR_SAME) {
+					//name, 순서로 이동
+					auto currentData = sqlite3_column_text(stmt, col + 2);
+					auto parsingData = ConvertCtoWC((const char*)currentData);
+					wcscpy_s(ai->name, parsingData);
+
+					//birth, 순서로 이동
+					currentData = sqlite3_column_text(stmt, col + 3);
+					parsingData = ConvertCtoWC((const char*)currentData);
+					wcscpy_s(ai->birth, parsingData);
+
+					std::cout << "[SQL] Success to find account-info" << std::endl;
+
+					sqlite3_finalize(stmt);
+					return true;
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+	sqlite3_finalize(stmt);
+	return false;
+}
 std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
-	
-	std::string sql = AddString("select * from friend_%s", ai.name);
+
+	std::string sql = AddString("select * from friend_%s", ConvertWCtoC(ai.name));
 
 	auto result = sqlite3_prepare(this->db, sql.c_str(), -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
 		WarningMessage("[SQL] Failed to get friend-info");
-		return (std::vector<FRIENDINFO>)ERROR;
+		sqlite3_finalize(stmt);
+		return {};
 	}
 
 	std::vector<FRIENDINFO> fi;
 	FriendInfo tmpFi;
-	
+
 	while (sqlite3_step(stmt) != SQLITE_DONE) {
 		int maxCnt = sqlite3_column_count(stmt);
 		void* tmpData = nullptr;
 
 		for (int cnt = 0; cnt < maxCnt; cnt++) {
-			
+
 			auto type = sqlite3_column_type(stmt, cnt);
 
 			switch (type) {
@@ -110,9 +164,10 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 				break;
 			default:
 				WarningMessage("[SQL] Somethings wrong friend-adata");
+				sqlite3_finalize(stmt);
 				return (std::vector<FRIENDINFO>)ERROR;
 			}
-						
+
 			if (tmpData != nullptr) {
 				switch (cnt) {
 				case FRIENDINFOTYPE::USERNAME:
@@ -132,6 +187,7 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 			}
 		}
 	}
+	sqlite3_finalize(stmt);
 
 	return fi;
 }

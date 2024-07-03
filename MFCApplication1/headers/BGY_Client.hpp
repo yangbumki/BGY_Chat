@@ -90,7 +90,7 @@ public:
 	}
 
 	template <typename T>
-	bool SendData(DataHeaders* header,T* data) {
+	bool SendData(DataHeaders* header, T* data) {
 		if (data == nullptr) {
 			WarningMessage("[CLIENT] : Failed to send-data");
 			return false;
@@ -99,14 +99,14 @@ public:
 		memset(&cm->clientData, 0, sizeof(cm->clientData));
 
 		memcpy_s(cm->clientData.data, sizeof(cm->clientData.data), header, sizeof(DataHeaders));
-		memcpy_s(cm->clientData.data+sizeof(DataHeaders), sizeof(cm->clientData.data), data, sizeof(T));
+		memcpy_s(cm->clientData.data + sizeof(DataHeaders), sizeof(cm->clientData.data), data, sizeof(T));
 
 		cm->clientData.wsaBuf.buf = cm->clientData.data;
 		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
 
 		int result = 0;
 
-		 result = WSASend(*this->serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
+		result = WSASend(*this->serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, NULL);
 		if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
 			WarningMessage("[CLIENT] : Failed to send data-header");
 			return false;
@@ -117,7 +117,7 @@ public:
 
 
 	template <typename T>
-	int RecvData(std::vector<T*> data) {
+	int RecvData(std::vector<T*>* data) {
 		ZeroMemory(cm, sizeof(ClientModel));
 		cm->clientData.wsaBuf.buf = cm->clientData.data;
 		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
@@ -142,16 +142,17 @@ public:
 
 		switch (dataHeader->dataType) {
 		case DATA_TYPE::RESPOND_FRIEND_INFO:
-			FriendInfo* friendInfo;
-
+			FriendInfo* friendInfo,* tmpFIData;
 			friendInfo = (T*)(cm->clientData.data + sizeof(DataHeaders));
+			tmpFIData = tmpData;
 
 			for (int cnt = 0; cnt < dataHeader->dataCnt; cnt++) {
-				tmpData->userName = friendInfo->userName;
-				tmpData->friending = friendInfo->friending;
+				//username 복사해야함
+				tmpFIData->userName = friendInfo->userName;
+				tmpFIData->friending = friendInfo->friending;
 				tmpData->request = friendInfo->request;
-				
-				data[cnt] = tmpData;
+
+				data->push_back(tmpData);
 			}
 			break;
 
@@ -161,6 +162,48 @@ public:
 
 		return SUCCESS;
 	}
+
+	template <typename T>
+	int RecvData(T* data) {
+		ZeroMemory(cm, sizeof(ClientModel));
+		cm->clientData.wsaBuf.buf = cm->clientData.data;
+		cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
+
+		auto result = WSARecv(*serverSock, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, NULL, NULL);
+		if (result == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
+			ErrorMessage("[CLIENT] : Failed to recv-data");
+			return ERROR;
+		}
+
+		if (cm->clientData.recvBytes < 0) {
+			WarningMessage("[CLIENT] : Failed to recv-data : byte");
+			return ERROR;
+		}
+
+		DataHeaders* dataHeader;
+
+		dataHeader = (DataHeaders*)&cm->clientData.data;
+
+		T* tmpData = new T;
+		ZeroMemory(tmpData, sizeof(T));
+
+		switch (dataHeader->dataType) {
+		case DATA_TYPE::RESPOND_FRIEND_INFO: {
+			FriendInfo* friendInfo;
+
+			friendInfo = (FriendInfo*)(cm->clientData.data + sizeof(DataHeaders));
+
+			data = tmpData;
+			break;
+		}
+		default:
+			memcpy(data, cm->clientData.data, sizeof(T));
+			break;
+		}
+
+		return SUCCESS;
+	}
+
 
 	int RespondData() {
 		ZeroMemory(cm, sizeof(ClientModel));
@@ -178,7 +221,7 @@ public:
 
 		if (dh->dataType == DataType::RESPOND) {
 			auto data = (cm->clientData.data + sizeof(DataHeaders));
-			
+
 			if (*data == RespondDataType::SUCCESS) {
 				return RespondDataType::SUCCESS;
 			}

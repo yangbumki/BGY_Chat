@@ -40,21 +40,21 @@ bool MainView::SetFirendGridView(bool set) {
 
 bool MainView::RequestFriendsInfo() {
 	DataHeaders dataHeaders = { NULL, };
-	AccountInfo* myAccountInfo = nullptr;
+	/*AccountInfo* myAccountInfo = nullptr;*/
 	
 	dataHeaders.dataType = REQUEST_FRIEND_INFO;
 	dataHeaders.dataSize = sizeof(FriendInfo);
 	dataHeaders.dataCnt = 1;
 
-	if (myAccountInfo != nullptr) {
+	/*if (myAccountInfo != nullptr) {
 		WarningMessage("[MAIN] : Failed to request friend infos");
 		return false;
-	}
+	}*/
 
-	myAccountInfo = new AccountInfo;
-	ZeroMemory(myAccountInfo, sizeof(AccountInfo));
+	/*myAccountInfo = new AccountInfo;
+	ZeroMemory(myAccountInfo, sizeof(AccountInfo));*/
 
-	if (!bClient->SendData(&dataHeaders, myAccountInfo)) {
+	if (!bClient->SendData(&dataHeaders, this->myAccountInfo)) {
 		WarningMessage("[MAIN] : Failed to request friend infos");
 		return false;
 	}
@@ -64,7 +64,7 @@ bool MainView::RequestFriendsInfo() {
 		return false;
 	}
 
-	auto result = bClient->RecvData(friendInfos);
+	auto result = bClient->RecvData(&friendInfos);
 	if (result == ERROR) {
 		WarningMessage("[MAIN] : Failed to recv friend infos");
 		return false;
@@ -84,9 +84,9 @@ MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/
 	this->myAccountInfo = new AccountInfo;
 	memcpy(this->myAccountInfo, ac, sizeof(AccountInfo));
 
-	/*if (!RequestFriendsInfo()) {
+	if (!RequestFriendsInfo()) {
 		ErrorMessage("Failed to Initialize main-view");
-	}*/
+	}
 }
 
 MainView::~MainView()
