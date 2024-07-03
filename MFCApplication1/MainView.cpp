@@ -12,6 +12,7 @@ IMPLEMENT_DYNAMIC(MainView, CDialog)
 
 //private function
 void MainView::InitDialog() {
+	statusNameLabel.SetWindowTextW(myAccountInfo->name);
 	InitTabView();
 }
 
@@ -37,19 +38,65 @@ bool MainView::SetFirendGridView(bool set) {
 	return true;
 }
 
+bool MainView::RequestFriendsInfo() {
+	DataHeaders dataHeaders = { NULL, };
+	AccountInfo* myAccountInfo = nullptr;
+	
+	dataHeaders.dataType = REQUEST_FRIEND_INFO;
+	dataHeaders.dataSize = sizeof(FriendInfo);
+	dataHeaders.dataCnt = 1;
+
+	if (myAccountInfo != nullptr) {
+		WarningMessage("[MAIN] : Failed to request friend infos");
+		return false;
+	}
+
+	myAccountInfo = new AccountInfo;
+	ZeroMemory(myAccountInfo, sizeof(AccountInfo));
+
+	if (!bClient->SendData(&dataHeaders, myAccountInfo)) {
+		WarningMessage("[MAIN] : Failed to request friend infos");
+		return false;
+	}
+
+	if (bClient->RespondData() == ERROR) {
+		WarningMessage("[MAIN] : Failed to respond friend infos");
+		return false;
+	}
+
+	auto result = bClient->RecvData(friendInfos);
+	if (result == ERROR) {
+		WarningMessage("[MAIN] : Failed to recv friend infos");
+		return false;
+	}
+
+	return true;
+}
+
 bool MainView::SetSettingGridView(bool set) {
 
 	return true;
 }
 
-MainView::MainView(BgyClient* client, CWnd* pParent /*=nullptr*/)
+MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/)
 	: CDialog(IDD_MAIN_VIEW, pParent), bClient(client)
 {
+	this->myAccountInfo = new AccountInfo;
+	memcpy(this->myAccountInfo, ac, sizeof(AccountInfo));
+
+	/*if (!RequestFriendsInfo()) {
+		ErrorMessage("Failed to Initialize main-view");
+	}*/
 }
 
 MainView::~MainView()
 {
-	
+	for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
+		delete(friendInfos[cnt]);
+
+		friendInfos.clear();
+		delete(myAccountInfo);
+	}
 }
 
 void MainView::DoDataExchange(CDataExchange* pDX)
@@ -59,12 +106,12 @@ void MainView::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, FRIEND_LIST, friendListBox);
 	DDX_Control(pDX, FRIEND_AREA, friendArea);
 
-	InitDialog();
 	DDX_Control(pDX, STATUS_NAME, statusNameLabel);
 	DDX_Control(pDX, ADD_FRIEND_BTN, addFriendBtn);
 	DDX_Control(pDX, TALK_BTN, talkBtn);
 	DDX_Control(pDX, LOGOUT_BTN, logoutBtn);
 	DDX_Control(pDX, IDC_LOGIN_IMAGE, logoImg);
+	InitDialog();
 }
 
 

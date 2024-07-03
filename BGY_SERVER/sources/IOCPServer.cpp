@@ -218,20 +218,59 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
 			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
 				WarningMessage("[IOCP] : Failed to send respond-data");
-				continue;
+				break;
 			}
 
 			std::cout << "[IOCP] : Success to send respond-data" << std::endl;
 
-			if (respondData == nullptr)
+			if (respondData != nullptr)
 				delete(respondData);
-			if (respondDH == nullptr)
-				delete(respondDH);
-		break;
-		case FRIEND_INFO:
-			
 			break;
+		case REQUEST_FRIEND_INFO:{
+			//Respond 변수 초기화
+			respondData = new ClientIOData;
+			ZeroMemory(respondData, sizeof(ClientIOData));
+			respondDH = (DataHeaders*)respondData->data;
 
+			respondDH->dataCnt = 1;
+			respondDH->dataSize = sizeof(ClientIOData);
+			respondDH->dataType = RESPOND;
+
+			data = (char*)(respondData->data + sizeof(DataHeaders));
+			//중복 데이터 확인
+			*data = RESPOND_DATA_TYPE::SUCCESS;
+
+			respondData->wsaBuf.buf = respondData->data;
+			respondData->wsaBuf.len = sizeof(respondData->data);
+
+			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to send respond-data");
+				break;
+			}
+
+			std::cout << "[IOCP] : Success to send respond-data" << std::endl;
+
+			ZeroMemory(respondData, sizeof(ClientIOData));
+
+			respondData->wsaBuf.buf = respondData->data;
+			respondData->wsaBuf.len = sizeof(respondData->data);
+
+			
+
+			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			auto friendInfos = iocp->bgySql->GetFriendInfo(*ai);
+
+			FriendInfo* friendInfo = nullptr;
+			for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
+				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders));
+				memcpy(friendInfo, &friendInfos[cnt], sizeof(FriendInfo));
+			}
+
+			if (respondData != nullptr)
+				delete(respondData);
+			break;
+		}
 		default:
 			break;
 	}
@@ -266,7 +305,7 @@ bool IOCPServer::CreateWorker(int workerCnt) {
 	return true;
 }
 template <typename T>
-bool IOCPServer::SendData(DataHeaders* dh, T* data,) {
+bool IOCPServer::SendData(DataHeaders* dh, T* data) {
 	
 }
 bool IOCPServer::ServerOpen() {

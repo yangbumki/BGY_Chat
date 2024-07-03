@@ -2,6 +2,8 @@
 #include "afxdialogex.h"
 #include "resource.h"
 
+//#include "LoginView.h"
+#include <vector>
 
 // MainView 대화 상자
 
@@ -14,6 +16,9 @@ private:
 		FRIEND = 0,
 		SETTING
 	}TabViewType, TABVIEWTYPE;
+
+	AccountInfo* myAccountInfo = nullptr;
+	std::vector<FriendInfo*> friendInfos = {};
 
 	CTabCtrl tabView;
 	BgyClient* bClient = nullptr;
@@ -29,10 +34,12 @@ private:
 
 	bool SetFirendGridView(bool set);
 	bool SetSettingGridView(bool set);
+
+	bool RequestFriendsInfo();
 	
 
 public:
-	MainView(BgyClient* client, CWnd* pParent = nullptr);   // 표준 생성자입니다.
+	MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent = nullptr);   // 표준 생성자입니다.
 	virtual ~MainView();
 
 // 대화 상자 데이터입니다.

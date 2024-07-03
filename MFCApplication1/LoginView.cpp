@@ -229,7 +229,7 @@ void LOGIN_VIEW::OnBnClickedLogin()
 		MessageBox(L"로그인에 성공했습니다.", L"로그인");
 		this->ShowWindow(SW_HIDE);
 
-		mv = new MainView(this->client, this);
+		mv = new MainView(this->client, ai, this);
 		mv->Create(IDD_MAIN_VIEW, this);
 	}
 
