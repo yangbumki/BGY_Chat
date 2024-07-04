@@ -12,6 +12,7 @@
 #define IDD_MAIN_VIEW                   134
 #define MainLogo                        135
 #define IDR_ACCELERATOR1                136
+#define IDD_FRIEND_CONTROL_VIEW         141
 #define MAINTITLE                       200
 #define MAIN_LOGO                       200
 #define BTN_LOGIN                       1002
@@ -38,17 +39,24 @@
 #define FRIEND_AREA                     1030
 #define ADD_FRIEND_BTN                  1031
 #define TALK_BTN                        1032
-#define IDC_BUTTON3                     1033
 #define LOGOUT_BTN                      1033
 #define STATUS_NAME                     1034
+#define IDC_LIST1                       1037
+#define FRIEND_REQUST_LISBOX            1037
+#define FRIEND_REQUST_LABEL             1040
+#define REQUST_ACCEPT_BTN               1041
+#define REQUST_REJECT_BTN               1042
+#define REQUST_ADD_EDIT                 1044
+#define FRIEND_ADD_LABEL                1046
+#define FRIEND_ADD_BTN                  1047
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        137
+#define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32772
-#define _APS_NEXT_CONTROL_VALUE         1035
+#define _APS_NEXT_CONTROL_VALUE         1051
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -137,24 +137,23 @@ public:
 
 		dataHeader = (DataHeaders*)&cm->clientData.data;
 
-		T* tmpData = new T;
-		ZeroMemory(tmpData, sizeof(T));
-
 		switch (dataHeader->dataType) {
-		case DATA_TYPE::RESPOND_FRIEND_INFO:
-			FriendInfo* friendInfo,* tmpFIData;
-			friendInfo = (T*)(cm->clientData.data + sizeof(DataHeaders));
-			tmpFIData = tmpData;
+		case DATA_TYPE::RESPOND_FRIEND_INFO: {
+			FriendInfo* friendInfo, * tmpFIData;
+			
 
 			for (int cnt = 0; cnt < dataHeader->dataCnt; cnt++) {
+				friendInfo = (T*)(cm->clientData.data + sizeof(DataHeaders) + sizeof(FriendInfo)*cnt);
 				//username 복사해야함
-				tmpFIData->userName = friendInfo->userName;
-				tmpFIData->friending = friendInfo->friending;
-				tmpData->request = friendInfo->request;
+				tmpFIData = new FriendInfo;
 
-				data->push_back(tmpData);
+				tmpFIData->userName = friendInfo->userName;
+				tmpFIData->request = friendInfo->request;
+				tmpFIData->friending = friendInfo->friending;
+				data->push_back(tmpFIData);
 			}
 			break;
+		}
 
 		default:
 			break;

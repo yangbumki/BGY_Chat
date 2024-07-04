@@ -11,16 +11,55 @@
 IMPLEMENT_DYNAMIC(MainView, CDialog)
 
 //private function
+
+template <typename T>
+void MainView::DynamicMemoryAllocation(T** val) {
+	if (*val != nullptr) {
+		ErrorMessage("[MAIN] : Aleady exist variable");
+	}
+
+	*val = new T;
+	//ZeroMemory(*val, sizeof(T));
+}
+
+bool MainView::InitFriendCtlDlg() {
+	friendControlDlg = new FriendControlView(this);
+
+	return true;
+}
+
 void MainView::InitDialog() {
 	statusNameLabel.SetWindowTextW(myAccountInfo->name);
 	InitTabView();
+	if (!InitFriendCtlDlg()) {
+		ErrorMessage("[MAIN] Somethings wrong check your code");
+	}
+	
 }
-
 void MainView::InitTabView() {
 	tabView.InsertItem(0, L"친구");
 	tabView.InsertItem(1, L"설정");
 }
+bool MainView::InitFriendList() {
+	int friendInfoCnt = friendInfos.size();
+	if (friendInfoCnt <= 0) {
+		WarningMessage("[MAIN] : Failed to Initialize Friend-List");
+		return false;
+	}
 
+	for (int cFriendInfo = 0; cFriendInfo < friendInfoCnt; cFriendInfo++) {
+		if (friendInfos[cFriendInfo]->friending == TRUE) {
+			friendListBox.AddString(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+		}
+			//friendListBox.AddString(L"friendInfos[cFriendInfo]->userName.c_str())");
+		else {
+			//친구 요청 처리 만들어야함
+			//friendControlDlg->UpdateRequestFriendList(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+		}
+	}
+
+	return true;
+}
 bool MainView::SetFirendGridView(bool set) {
 	int status = -1;
 	
@@ -72,12 +111,10 @@ bool MainView::RequestFriendsInfo() {
 
 	return true;
 }
-
 bool MainView::SetSettingGridView(bool set) {
 
 	return true;
 }
-
 MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/)
 	: CDialog(IDD_MAIN_VIEW, pParent), bClient(client)
 {
@@ -88,7 +125,6 @@ MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/
 		ErrorMessage("Failed to Initialize main-view");
 	}
 }
-
 MainView::~MainView()
 {
 	for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
@@ -98,7 +134,6 @@ MainView::~MainView()
 		delete(myAccountInfo);
 	}
 }
-
 void MainView::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
@@ -111,16 +146,28 @@ void MainView::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, TALK_BTN, talkBtn);
 	DDX_Control(pDX, LOGOUT_BTN, logoutBtn);
 	DDX_Control(pDX, IDC_LOGIN_IMAGE, logoImg);
+
+	//친구 추가 변수 불러오기
+	/*DDX_Control(pDX, REQUST_ADD_EDIT, *friendAddEdit);
+	DDX_Control(pDX, FRIEND_REQUST_LISBOX, *friendRequstBox);
+	DDX_Control(pDX, FRIEND_ADD_BTN, *friendAddBtn);
+	DDX_Control(pDX, REQUST_ACCEPT_BTN, *acceptBtn);
+	DDX_Control(pDX, REQUST_REJECT_BTN, *rejectBtn);*/
+
 	InitDialog();
+	if (!InitFriendList()) {
+		ErrorMessage("[MAIN] Somethings wrong check your code");
+	}
 }
 
 
 BEGIN_MESSAGE_MAP(MainView, CDialog)
 	ON_NOTIFY(TCN_SELCHANGE, TAB_VIEW, &MainView::OnSelchangeTabView)
-ON_WM_PAINT()
-ON_WM_SYSCOMMAND()
-ON_WM_CLOSE()
-ON_WM_DESTROY()
+	ON_WM_PAINT()
+	ON_WM_SYSCOMMAND()
+	ON_WM_CLOSE()
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(ADD_FRIEND_BTN, &MainView::FriendCtlBtnClicked)
 END_MESSAGE_MAP()
 
 
@@ -174,4 +221,7 @@ void MainView::OnDestroy()
 	this->EndDialog(0);
 	auto pDlg = (CDialog*)this->GetParent();
 	pDlg->EndDialog(0);
+}
+void MainView::FriendCtlBtnClicked() {
+	friendControlDlg->DoModal();
 }

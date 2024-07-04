@@ -165,27 +165,23 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 			default:
 				WarningMessage("[SQL] Somethings wrong friend-adata");
 				sqlite3_finalize(stmt);
-				return (std::vector<FRIENDINFO>)ERROR;
+				return {};
 			}
 
-			if (tmpData != nullptr) {
-				switch (cnt) {
-				case FRIENDINFOTYPE::USERNAME:
-					tmpFi.userName = (char*)tmpData;
-					break;
-				case FRIENDINFOTYPE::FRINEDING:
-					tmpFi.friending = tmpData;
-					break;
-				case FRIENDINFOTYPE::REQUEST:
-					tmpFi.request = tmpData;
-				}
-			}
-
-			if (cnt == FRIENDINFOTYPE::TOTALCNT) {
-				fi.push_back(tmpFi);
-				ZeroMemory(&tmpFi, sizeof(FriendInfo));
+			switch (cnt) {
+			case FRIENDINFOTYPE::USERNAME:
+				tmpFi.userName = ((char*)tmpData);
+				break;
+			case FRIENDINFOTYPE::FRINEDING:
+				tmpFi.friending = tmpData;
+				break;
+			case FRIENDINFOTYPE::REQUEST:
+				tmpFi.request = tmpData;
 			}
 		}
+
+
+		fi.push_back(tmpFi);
 	}
 	sqlite3_finalize(stmt);
 

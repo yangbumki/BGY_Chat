@@ -3,6 +3,7 @@
 #include "resource.h"
 
 //#include "LoginView.h"
+#include "FriendControlView.h"
 #include <vector>
 
 // MainView 대화 상자
@@ -29,12 +30,26 @@ private:
 	CButton talkBtn;
 	CButton logoutBtn;
 
+	//친구 추가 변수
+	FriendControlView* friendControlDlg	= nullptr;
+	//CEdit* friendAddEdit		= nullptr;
+	//CListBox* friendRequstBox	= nullptr;
+	//CButton* friendAddBtn		= nullptr;
+	//CButton* acceptBtn			= nullptr;
+	//CButton* rejectBtn			= nullptr;
+
+	template <typename T>
+	void DynamicMemoryAllocation(T** val);
+
+	bool InitFriendCtlDlg();
 	void InitDialog();
+
 	void InitTabView();
+	bool InitFriendList();
 
 	bool SetFirendGridView(bool set);
 	bool SetSettingGridView(bool set);
-
+	
 	bool RequestFriendsInfo();
 	
 
@@ -59,5 +74,6 @@ public:
 
 	afx_msg void OnClose();
 	afx_msg void OnDestroy();
+	afx_msg void FriendCtlBtnClicked();
 	CStatic logoImg;
 };

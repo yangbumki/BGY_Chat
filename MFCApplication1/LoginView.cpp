@@ -231,7 +231,7 @@ void LOGIN_VIEW::OnBnClickedLogin()
 		this->ShowWindow(SW_HIDE);
 
 		mv = new MainView(this->client, ai, this);
-		mv->Create(IDD_MAIN_VIEW, this);
+		mv->Create(IDD_MAIN_VIEW);
 	}
 
 	delete(dh);

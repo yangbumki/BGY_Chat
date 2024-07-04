@@ -292,7 +292,7 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 
 			FriendInfo* friendInfo = nullptr;
 			for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
-				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders));
+				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders) + sizeof(FriendInfo)*cnt);
 				memcpy(friendInfo, &friendInfos[cnt], sizeof(FriendInfo));
 			}
 			
