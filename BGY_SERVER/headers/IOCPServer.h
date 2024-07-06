@@ -41,6 +41,8 @@ private:
 	template <typename T>
 	bool SendData(DataHeaders* dh, T* data);
 
+	bool UpdateFriendInfo();
+
 public:
 	IOCPServer(u_int serverPort,BGYSqlite* sql);
 	~IOCPServer();

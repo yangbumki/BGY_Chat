@@ -22,8 +22,8 @@ private:
 	std::vector<FriendInfo*> friendInfos = {};
 
 	CTabCtrl tabView;
-	BgyClient* bClient = nullptr;
-	CListBox friendListBox;
+	BgyClient* bClient			= nullptr;
+	CListBox* friendListBox		= nullptr;
 	CStatic friendArea;
 	CStatic statusNameLabel;
 	CButton addFriendBtn;
@@ -40,9 +40,8 @@ private:
 
 	template <typename T>
 	void DynamicMemoryAllocation(T** val);
-
 	bool InitFriendCtlDlg();
-	void InitDialog();
+	
 
 	void InitTabView();
 	bool InitFriendList();
@@ -63,6 +62,7 @@ public:
 #endif
 
 protected:
+	 BOOL OnInitDialog();
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
 
 	DECLARE_MESSAGE_MAP()

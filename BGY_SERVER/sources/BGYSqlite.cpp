@@ -79,6 +79,38 @@ bool BGYSqlite::CreateAccount(const DB_ACCOUNT_INFO ai) {
 
 	return true;
 }
+bool BGYSqlite::CheckAccount(const AccountInfo* ai) {
+	const char* sqlCmd = "select id, password from users";
+	auto result = sqlite3_prepare(db, sqlCmd, -1, &stmt, nullptr);
+	if (result != SQLITE_OK) {
+		WarningMessage("Failed to prepare db");
+		sqlite3_finalize(stmt);
+		return false;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE) {
+		int maxCol = sqlite3_column_count(stmt);
+
+		for (int col = 0; col < maxCol; col++) {
+			const unsigned char* currentID = sqlite3_column_text(stmt, col++);
+			const unsigned char* currendPasswd = sqlite3_column_text(stmt, col);
+
+			auto checkID = ConvertCtoWC((const char*)currentID);
+			auto checkPasswd = ConvertCtoWC((const char*)currendPasswd);
+
+			result = wcsncmp(ai->id, checkID, wcslen(checkID));
+			if (result == 0) {
+				result = wcsncmp(ai->passwd, checkPasswd, wcslen(checkPasswd));
+				if (result == 0) {
+					sqlite3_finalize(stmt);
+					return true;
+				}
+			}
+		}
+	}
+	sqlite3_finalize(stmt);
+	return false;
+}
 
 bool BGYSqlite::GetAccountInfo(AccountInfo* ai) {
 
@@ -186,4 +218,31 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 	sqlite3_finalize(stmt);
 
 	return fi;
+}
+
+bool BGYSqlite::UpdateFriendInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
+	std::string sql;
+
+
+	//模备 芭例
+	if (fi->request == 0 && fi->friending == 0) {
+		sql = AddString("delete from friend_%s where name='%s'", ai->name, fi->userName);
+	}
+	//模备 荐遏
+	else {
+		sql = AddString("update frined_%s set friend_request=%s, friend=%s where users='%s'", ai->name, fi->request, fi->friending, fi->userName);
+	}
+
+	auto result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
+	if (result != SQLITE_OK) {
+		WarningMessage("[SQL] : Failed to preare : UpdateFriendInfo");
+		sqlite3_finalize(stmt);
+		return false;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE);
+
+	sqlite3_finalize(stmt);
+
+	return true;
 }

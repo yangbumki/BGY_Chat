@@ -177,7 +177,7 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		printf("Translate Bytes : %d \n", transBytes);
 		printf("Recvied Bytes : %d \n", cm->clientData.recvBytes);
 #endif
-		
+
 
 		header = (DataHeaders*)cm->clientData.data;
 		char* data = nullptr;
@@ -193,7 +193,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				SetColorMessage("[IOCP] : Success to create account \n", ccolor::YELLOW, ccolor::BLACK);
 			}
 			break;
-		case LOGIN_ACCOUNT:
+
+		case LOGIN_ACCOUNT: {
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			//Respond 변수 초기화
 			respondData = new ClientIOData;
@@ -205,12 +206,27 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			respondDH->dataType = RESPOND;
 
 			data = (char*)(respondData->data + sizeof(DataHeaders));
-			//중복 데이터 확인
-			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
+			//아이디 확인
+			if (iocp->bgySql->CheckAccount(ai)) {
 				printf("[IOCP] : Login Success \n");
 				*data = RESPOND_DATA_TYPE::SUCCESS;
 			}
-			else *data = RESPOND_DATA_TYPE::FAIL;
+			else {
+				*data = RESPOND_DATA_TYPE::FAIL;
+
+				respondData->wsaBuf.buf = respondData->data;
+				respondData->wsaBuf.len = sizeof(respondData->data);
+
+				result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
+				if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
+					WarningMessage("[IOCP] : Failed to send respond-data");
+					break;
+				}
+
+				if (respondData != nullptr)
+					delete(respondData);
+				continue;
+			}
 
 			respondData->wsaBuf.buf = respondData->data;
 			respondData->wsaBuf.len = sizeof(respondData->data);
@@ -220,13 +236,14 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				WarningMessage("[IOCP] : Failed to send respond-data");
 				break;
 			}
+
 			//AccountInfo 정보 전달
-			if(!iocp->bgySql->GetAccountInfo(ai)) {
+			if (!iocp->bgySql->GetAccountInfo(ai)) {
 				WarningMessage("[IOCP] : Failed to send account-info");
 				delete(respondData);
 				continue;
 			}
-			
+
 			ZeroMemory(respondData, sizeof(ClientIOData));
 			respondData->wsaBuf.buf = respondData->data;
 			respondData->wsaBuf.len = sizeof(respondData->data);
@@ -244,7 +261,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			if (respondData != nullptr)
 				delete(respondData);
 			break;
-		case REQUEST_FRIEND_INFO:{
+		}
+		case REQUEST_FRIEND_INFO: {
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			//Respond 변수 초기화
 			respondData = new ClientIOData;
@@ -275,13 +293,13 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			respondData->wsaBuf.buf = respondData->data;
 			respondData->wsaBuf.len = sizeof(respondData->data);
 
-			
+
 
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			auto friendInfos = iocp->bgySql->GetFriendInfo(*ai);
 			//친구 목록이 없을 경우
 			/*if (friendInfos.size() <= 0) {
-				
+
 			}*/
 
 			respondDH = (DataHeaders*)respondData->data;
@@ -292,28 +310,60 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 
 			FriendInfo* friendInfo = nullptr;
 			for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
-				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders) + sizeof(FriendInfo)*cnt);
+				friendInfo = (FriendInfo*)(respondData->data + sizeof(DataHeaders) + sizeof(FriendInfo) * cnt);
 				memcpy(friendInfo, &friendInfos[cnt], sizeof(FriendInfo));
 			}
-			
+
 			result = WSASend(cm->socket, &respondData->wsaBuf, 1, &respondData->sendBytes, respondData->flag, NULL, NULL);
 			if (result == SOCKET_ERROR && WSAGetLastError() == WSA_IO_PENDING) {
 				WarningMessage("[IOCP] : Failed to send respond-data");
 				break;
 			}
-			
+
 			std::cout << "[IOCP] : Success to send friend-info" << std::endl;
 
 			if (respondData != nullptr)
 				delete(respondData);
 			break;
 		}
+		case RESPOND_FRIEND_INFO: {
+			FriendInfo* recvFriendInfo,* changeFriendInfo;
+			AccountInfo* recvAccountInfo,* changeAccountInfo;
+
+			recvAccountInfo = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			recvFriendInfo = (FriendInfo*)(cm->clientData.data + sizeof(DataHeaders) + sizeof(AccountInfo));
+			
+
+			//내정보 업데이트
+			if (iocp->bgySql->UpdateFriendInfo(recvAccountInfo, recvFriendInfo)) {
+				changeAccountInfo = new AccountInfo;
+				changeFriendInfo = new FriendInfo;
+
+				//이름 정보 교환
+				wcscpy(changeAccountInfo->name, ConvertCtoWC(recvFriendInfo->userName.c_str()));
+				changeFriendInfo->userName.append(ConvertWCtoC(recvAccountInfo->name));
+
+				//친구 정보 변환
+				changeFriendInfo->request = recvFriendInfo->request;
+				changeFriendInfo->friending = recvFriendInfo->friending;
+
+				//DB Update
+				if (!iocp->bgySql->UpdateFriendInfo(changeAccountInfo, changeFriendInfo)) {
+					WarningMessage("[IOCP] : Failed to update-friend-info : change");
+				}
+
+				//동적 메모리 삭제
+				delete(changeAccountInfo);
+				delete(changeFriendInfo);
+			}
+			break;
+		}
 		default:
 			break;
+		}
 	}
-}
 
-return 0;
+	return 0;
 }
 
 bool IOCPServer::CreateWorker(int workerCnt) {
@@ -343,7 +393,7 @@ bool IOCPServer::CreateWorker(int workerCnt) {
 }
 template <typename T>
 bool IOCPServer::SendData(DataHeaders* dh, T* data) {
-	
+
 }
 bool IOCPServer::ServerOpen() {
 	if (!cModels.empty()) {

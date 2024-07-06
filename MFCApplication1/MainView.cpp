@@ -2,6 +2,8 @@
 //
 
 #include "pch.h"
+#include "framework.h"
+#include "BCHAT_APPLICATION.h"
 #include "afxdialogex.h"
 #include "MainView.h"
 
@@ -19,7 +21,6 @@ void MainView::DynamicMemoryAllocation(T** val) {
 	}
 
 	*val = new T;
-	//ZeroMemory(*val, sizeof(T));
 }
 
 bool MainView::InitFriendCtlDlg() {
@@ -27,15 +28,17 @@ bool MainView::InitFriendCtlDlg() {
 
 	return true;
 }
+BOOL MainView::OnInitDialog() {
+	CDialog::OnInitDialog();
 
-void MainView::InitDialog() {
 	statusNameLabel.SetWindowTextW(myAccountInfo->name);
-	InitTabView();
-	if (!InitFriendCtlDlg()) {
-		ErrorMessage("[MAIN] Somethings wrong check your code");
-	}
-	
+	InitTabView();	
+	InitFriendCtlDlg();
+	InitFriendList();
+
+	return true;
 }
+
 void MainView::InitTabView() {
 	tabView.InsertItem(0, L"친구");
 	tabView.InsertItem(1, L"설정");
@@ -48,13 +51,20 @@ bool MainView::InitFriendList() {
 	}
 
 	for (int cFriendInfo = 0; cFriendInfo < friendInfoCnt; cFriendInfo++) {
-		if (friendInfos[cFriendInfo]->friending == TRUE) {
-			friendListBox.AddString(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+		if (friendListBox == nullptr) {
+			return false;
 		}
-			//friendListBox.AddString(L"friendInfos[cFriendInfo]->userName.c_str())");
+		if (friendInfos[cFriendInfo]->friending == TRUE) {
+			friendListBox->AddString(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+		}
 		else {
 			//친구 요청 처리 만들어야함
-			//friendControlDlg->UpdateRequestFriendList(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+			if (friendControlDlg == nullptr) {
+				WarningMessage("[MAIN] : Failed to Initialize friendCtlDlg");
+				return false;
+			}
+
+			friendControlDlg->UpdateRequestFriendList(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
 		}
 	}
 
@@ -67,7 +77,7 @@ bool MainView::SetFirendGridView(bool set) {
 	else status = SW_SHOW;
 	
 	friendArea.ShowWindow(status);
-	friendListBox.ShowWindow(status);
+	friendListBox->ShowWindow(status);
 	statusNameLabel.ShowWindow(status);
 	addFriendBtn.ShowWindow(status);
 	talkBtn.ShowWindow(status);
@@ -118,8 +128,10 @@ bool MainView::SetSettingGridView(bool set) {
 MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/)
 	: CDialog(IDD_MAIN_VIEW, pParent), bClient(client)
 {
-	this->myAccountInfo = new AccountInfo;
+	DynamicMemoryAllocation(&myAccountInfo);
 	memcpy(this->myAccountInfo, ac, sizeof(AccountInfo));
+
+	DynamicMemoryAllocation(&friendListBox);
 
 	if (!RequestFriendsInfo()) {
 		ErrorMessage("Failed to Initialize main-view");
@@ -138,7 +150,7 @@ void MainView::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, TAB_VIEW, tabView);
-	DDX_Control(pDX, FRIEND_LIST, friendListBox);
+	DDX_Control(pDX, FRIEND_LIST, *friendListBox);
 	DDX_Control(pDX, FRIEND_AREA, friendArea);
 
 	DDX_Control(pDX, STATUS_NAME, statusNameLabel);
@@ -153,20 +165,14 @@ void MainView::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, FRIEND_ADD_BTN, *friendAddBtn);
 	DDX_Control(pDX, REQUST_ACCEPT_BTN, *acceptBtn);
 	DDX_Control(pDX, REQUST_REJECT_BTN, *rejectBtn);*/
-
-	InitDialog();
-	if (!InitFriendList()) {
-		ErrorMessage("[MAIN] Somethings wrong check your code");
-	}
 }
 
-
 BEGIN_MESSAGE_MAP(MainView, CDialog)
-	ON_NOTIFY(TCN_SELCHANGE, TAB_VIEW, &MainView::OnSelchangeTabView)
 	ON_WM_PAINT()
 	ON_WM_SYSCOMMAND()
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
+	ON_NOTIFY(TCN_SELCHANGE, TAB_VIEW, &MainView::OnSelchangeTabView)
 	ON_BN_CLICKED(ADD_FRIEND_BTN, &MainView::FriendCtlBtnClicked)
 END_MESSAGE_MAP()
 
@@ -223,5 +229,6 @@ void MainView::OnDestroy()
 	pDlg->EndDialog(0);
 }
 void MainView::FriendCtlBtnClicked() {
+	
 	friendControlDlg->DoModal();
 }

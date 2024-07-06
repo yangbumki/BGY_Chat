@@ -230,8 +230,9 @@ void LOGIN_VIEW::OnBnClickedLogin()
 		MessageBox(L"로그인에 성공했습니다.", L"로그인");
 		this->ShowWindow(SW_HIDE);
 
-		mv = new MainView(this->client, ai, this);
-		mv->Create(IDD_MAIN_VIEW);
+		mv = new MainView(client, ai, this);
+		//Sleep(500);
+		mv->DoModal();
 	}
 
 	delete(dh);
@@ -245,4 +246,5 @@ void LOGIN_VIEW::OnBnClickedSignUp()
 	SignupDlg* sd = nullptr;
 	sd = new SignupDlg(client);
 	sd->DoModal();
+	delete(sd);
 }

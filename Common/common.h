@@ -17,6 +17,7 @@
 #define BUFSIZE						1024
 
 #define MAX_ACCOUNT_LEN				128
+#define MAX__STRING_LEN				128
 #define MAX_ADD_STRING_LEN			128
 
 #define DATABASE_INTERVAL_TIME		100
@@ -69,7 +70,8 @@ typedef enum DATA_TYPE {
 	FRIEND_INFO,
 	REQUEST_FRIEND_INFO,
 	RESPOND,
-	RESPOND_FRIEND_INFO = RESPOND
+	RESPOND_FRIEND_INFO = RESPOND,
+	ADD_FRIEND
 }DataType;
 
 typedef enum RESPOND_DATA_TYPE {
@@ -149,7 +151,7 @@ static wchar_t* ConvertCtoWC(const char* str) {
 	wchar_t* wStr;
 
 	int strSize = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, NULL);
-	wStr = new wchar_t(strSize);
+	wStr = new wchar_t[strSize];
 	MultiByteToWideChar(CP_ACP, 0, str, strlen(str) + 1, wStr, strSize);
 
 	return wStr;
@@ -159,7 +161,7 @@ static char* ConvertWCtoC(const wchar_t* wstr) {
 	char* str;
 
 	int strSize = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, NULL, NULL, NULL);
-	str = new char(strSize);
+	str = new char[strSize];
 	WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, strSize, 0, 0);
 
 	return str;
