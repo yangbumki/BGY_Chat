@@ -20,6 +20,12 @@ private:
 	CButton* acceptBtn = nullptr;
 	CButton* rejectBtn = nullptr;
 
+	//통신 변수
+	BgyClient* bClient = nullptr;
+
+	//계정 정보
+	AccountInfo* myAccountInfo = nullptr;
+
 	//private Function
 	template <typename T>
 	void DynamicMemoryAllocation(T** val);
@@ -30,7 +36,7 @@ private:
 	bool InitListView();
 
 public:
-	FriendControlView(CWnd* pParent = nullptr);   // 표준 생성자입니다.
+	FriendControlView(BGY_CLIENT* client,AccountInfo* accountInfo, CWnd* pParent = nullptr);   // 표준 생성자입니다.
 	virtual ~FriendControlView();
 
 	bool UpdateRequestFriendList(wchar_t* name);
@@ -44,6 +50,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
 	afx_msg void ReqAcceptBtnClicked();
 	afx_msg void ReqRejectBtnClicekd();
+	afx_msg void AddFriendBtnClicked();
 
 	DECLARE_MESSAGE_MAP()
 };

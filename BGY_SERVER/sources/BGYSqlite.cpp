@@ -12,12 +12,13 @@ BGYSqlite::BGYSqlite(const char* dbName) {
 
 	SetColorMessage("[SQL] : Success to Open DB", ccolor::LIGHTGREEN, ccolor::BLACK);
 }
-
 BGYSqlite::~BGYSqlite() {
 	if (stmt != nullptr) sqlite3_finalize(stmt);
 	if (db != nullptr) sqlite3_close(db);
 }
 
+
+//계정 관련 함수
 bool BGYSqlite::GetDuplicatedAccount(const DB_ACCOUNT_INFO ai) {
 	const char* sqlCmd = "select id from users";
 	auto result = sqlite3_prepare(db, sqlCmd, -1, &stmt, nullptr);
@@ -45,7 +46,6 @@ bool BGYSqlite::GetDuplicatedAccount(const DB_ACCOUNT_INFO ai) {
 	sqlite3_finalize(stmt);
 	return false;
 }
-
 bool BGYSqlite::CreateAccount(const DB_ACCOUNT_INFO ai) {
 	char* sQuote = (char*)"\'";
 	char* comma = (char*)",";
@@ -60,7 +60,7 @@ bool BGYSqlite::CreateAccount(const DB_ACCOUNT_INFO ai) {
 
 	std::vector<std::string> sql;
 
-	sql.push_back(AddString("insert into users values('%s', '%s', '%s', '%s');", id, name, passwd, birth));
+	sql.push_back(AddString("insert into users values('%s', '%s', '%s', '%s');", id, passwd, name, birth));
 	sql.push_back((AddString("create table friend_%s(users text, friend bool, friend_request bool);", id)));
 
 	for (int cnt = 0; cnt < sql.size(); cnt++) {
@@ -111,7 +111,6 @@ bool BGYSqlite::CheckAccount(const AccountInfo* ai) {
 	sqlite3_finalize(stmt);
 	return false;
 }
-
 bool BGYSqlite::GetAccountInfo(AccountInfo* ai) {
 
 	std::string sql = "select * from users";
@@ -165,9 +164,11 @@ bool BGYSqlite::GetAccountInfo(AccountInfo* ai) {
 	sqlite3_finalize(stmt);
 	return false;
 }
+
+//친구 관련함수
 std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 
-	std::string sql = AddString("select * from friend_%s", ConvertWCtoC(ai.name));
+	std::string sql = AddString("select * from friend_%s", ConvertWCtoC(ai.id));
 
 	auto result = sqlite3_prepare(this->db, sql.c_str(), -1, &stmt, nullptr);
 	if (result != SQLITE_OK) {
@@ -202,7 +203,7 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 
 			switch (cnt) {
 			case FRIENDINFOTYPE::USERNAME:
-				tmpFi.userName = ((char*)tmpData);
+				tmpFi.userID = ((char*)tmpData);
 				break;
 			case FRIENDINFOTYPE::FRINEDING:
 				tmpFi.friending = tmpData;
@@ -219,23 +220,78 @@ std::vector<FRIENDINFO> BGYSqlite::GetFriendInfo(const DB_ACCOUNT_INFO ai) {
 
 	return fi;
 }
-
 bool BGYSqlite::UpdateFriendInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 	std::string sql;
 
-
 	//친구 거절
 	if (fi->request == 0 && fi->friending == 0) {
-		sql = AddString("delete from friend_%s where name='%s'", ai->name, fi->userName);
+		sql = AddString("delete from friend_%s where name='%s'", ai->id, fi->userID);
 	}
 	//친구 수락
 	else {
-		sql = AddString("update frined_%s set friend_request=%s, friend=%s where users='%s'", ai->name, fi->request, fi->friending, fi->userName);
+		sql = AddString("update frined_%s set friend_request=%s, friend=%s where users='%s'", ai->id, fi->request, fi->friending, fi->userID);
 	}
 
 	auto result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
 	if (result != SQLITE_OK) {
 		WarningMessage("[SQL] : Failed to preare : UpdateFriendInfo");
+		sqlite3_finalize(stmt);
+		return false;
+	}
+
+	while (sqlite3_step(stmt) != SQLITE_DONE);
+
+	sqlite3_finalize(stmt);
+
+	return true;
+}
+bool BGYSqlite::AddFrindInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
+	//친구 중복 확인 변수
+	std::vector<FRIENDINFO> checkFriendInfos;
+	int totCnt;
+	int result;
+	//친구 중복 확인
+	checkFriendInfos = GetFriendInfo(*ai);
+	totCnt = checkFriendInfos.size();
+	if (0 < totCnt) {
+		for (int cnt = 0; cnt < totCnt; cnt++) {
+			//이름으로만 확인
+			result = strcmp(checkFriendInfos[cnt].userID.c_str(), fi->userID.c_str());
+			if (result == 0) {
+				WarningMessage("[SQL] : Failed to AddFriendInfo");
+				WarningMessage("[SQL] : Aledy exist Frind-info");
+				return false;
+			}
+		}
+	}
+	//친구 추가 변수
+	std::string sql;
+
+	//친구 추가
+	//values 순서 : userName, Frind, Frind_request
+	/*sql = AddString("insert into frined_%s values('%s',%s, %s)", ai->id, fi->userID, fi->friending, fi->request);*/
+	//해당 sql 문에 전달되는 friending, request는 bool 형식이기에 문자열로 판별해야된다.
+	//변수 선언
+	std::string friStr;
+	std::string reqStr;
+
+	const char* trueStr = "1";
+	const char* falseStr = "0";
+
+
+	if (fi->friending) friStr.append(trueStr);
+	else friStr.append(falseStr);
+
+	if (fi->request) reqStr.append(trueStr);
+	else reqStr.append(falseStr);
+	
+
+	sql = AddString("insert into friend_%s values('%s',%s,%s)", ai->id, fi->userID, friStr, reqStr);
+
+
+	result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
+	if (result != SQLITE_OK) {
+		WarningMessage("[SQL] : Failed to preare : AddFriendInfo");
 		sqlite3_finalize(stmt);
 		return false;
 	}

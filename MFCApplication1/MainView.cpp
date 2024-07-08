@@ -24,7 +24,7 @@ void MainView::DynamicMemoryAllocation(T** val) {
 }
 
 bool MainView::InitFriendCtlDlg() {
-	friendControlDlg = new FriendControlView(this);
+	friendControlDlg = new FriendControlView(bClient,this->myAccountInfo, this);
 
 	return true;
 }
@@ -55,7 +55,7 @@ bool MainView::InitFriendList() {
 			return false;
 		}
 		if (friendInfos[cFriendInfo]->friending == TRUE) {
-			friendListBox->AddString(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+			friendListBox->AddString(ConvertCtoWC(friendInfos[cFriendInfo]->userID.c_str()));
 		}
 		else {
 			//친구 요청 처리 만들어야함
@@ -64,7 +64,7 @@ bool MainView::InitFriendList() {
 				return false;
 			}
 
-			friendControlDlg->UpdateRequestFriendList(ConvertCtoWC(friendInfos[cFriendInfo]->userName.c_str()));
+			friendControlDlg->UpdateRequestFriendList(ConvertCtoWC(friendInfos[cFriendInfo]->userID.c_str()));
 		}
 	}
 
@@ -229,6 +229,15 @@ void MainView::OnDestroy()
 	pDlg->EndDialog(0);
 }
 void MainView::FriendCtlBtnClicked() {
-	
+	//재생성
+	if (friendControlDlg == nullptr) {
+		InitFriendCtlDlg();
+		//친구 목록 불러오기
+		InitFriendList();
+	}
 	friendControlDlg->DoModal();
+
+	//정리 
+	delete(friendControlDlg);
+	friendControlDlg = nullptr;
 }

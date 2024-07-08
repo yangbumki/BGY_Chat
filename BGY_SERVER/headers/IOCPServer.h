@@ -3,6 +3,8 @@
 #include "../../Common/common.h"
 #include "BGYSqlite.h"
 
+//#include <queue>
+
 #define ALEDADY_EXIST		-1
 #define ERROR				-1
 
@@ -22,6 +24,11 @@ private:
 
 	std::vector<ClientModel*> cModels;
 
+	//공용 데이터 변수
+	//std::vector<CLIENT_IO_DATA*> commonDatas;
+	std::vector<CLIENT_IO_DATA> commonDatas;
+
+	//서버 외 변수
 	BGYSqlite* bgySql = nullptr;
 
 	typedef enum SERVER_STATUS {

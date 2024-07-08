@@ -80,6 +80,15 @@ IOCPServer::~IOCPServer() {
 		CloseHandle(serverOpenThreadHandle);
 	}
 
+	//공통 데이터 변수 정리하기
+	//동적 활당 일 경우
+	//현재는 벡터 내부 값을 정적 활당으로 변경 하여 상관 없음
+	/*int commDataSize = commonDatas.size();
+	if (commDataSize > 0) {
+		for (int cnt = 0; cnt < commDataSize; cnt++) delete(commonDatas[cnt]);
+	}*/
+	commonDatas.clear();
+
 	WSACleanup();
 
 
@@ -178,11 +187,17 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 		printf("Recvied Bytes : %d \n", cm->clientData.recvBytes);
 #endif
 
-
+		
 		header = (DataHeaders*)cm->clientData.data;
 		char* data = nullptr;
 
 		switch (header->dataType) {
+			//헤더가 없을 경우, 일반데이터 작업
+		case COMMON_DATA: {
+			iocp->commonDatas.push_back(cm->clientData);
+			break;
+		}
+
 		case CREATE_ACCOUNT:
 			ai = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
 			if (iocp->bgySql->GetDuplicatedAccount(*ai)) {
@@ -340,8 +355,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				changeFriendInfo = new FriendInfo;
 
 				//이름 정보 교환
-				wcscpy(changeAccountInfo->name, ConvertCtoWC(recvFriendInfo->userName.c_str()));
-				changeFriendInfo->userName.append(ConvertWCtoC(recvAccountInfo->name));
+				wcscpy_s(changeAccountInfo->name, ConvertCtoWC(recvFriendInfo->userID.c_str()));
+				changeFriendInfo->userID.append(ConvertWCtoC(recvAccountInfo->name));
 
 				//친구 정보 변환
 				changeFriendInfo->request = recvFriendInfo->request;
@@ -358,6 +373,94 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			}
 			break;
 		}
+		case ADD_FRIEND: {
+			FriendInfo* friendInfo = nullptr,
+					* changeFriendInfo = nullptr;
+
+			AccountInfo* accountInfo = nullptr,
+					* changeAccountInfo = nullptr;
+
+			//데이터 정보가 BUFSZIE(1024)를 넘기에 두번에 나눠서 받아야 함.
+			//첫번째 데이터를 ACcountInfo 형태로, 두번쨰 데이털 FriendInfo 형태로 받을 예정
+			
+			//받은 데이터를 복사 할 동적 메모리 할당
+			accountInfo = new AccountInfo;
+			memset(accountInfo, 0, sizeof(AccountInfo));
+
+			//데이터 복사
+			memcpy(accountInfo, (cm->clientData.data + sizeof(DataHeaders)), sizeof(AccountInfo));
+
+			//받았던 데이터 초기화
+			ZeroMemory(cm->clientData.data, BUFSIZE);
+			cm->clientData.recvBytes = 0;
+
+			//이미 신호를 받아서 처리하는 overlap 구조상 바로 넘어감
+			//일반 recv send 구조로 변경
+			//WSARecv(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.recvBytes, &cm->clientData.flag, &cm->clientData.overlapped, NULL);
+			
+			//recv 받기전 다른 비동기 소켓이 먼저 WSARecv로 해당 데이터를 가져가기 떄문에 recv 함수가 따로 동작 하지 않는다.
+			//애초에 하나의 데이터를 다 받아온다음 한개로 처리하는 구조로 짰어야 함
+			//헤더가 없는 공통된 recv를 위에 따로 빼놓는 방법 시도
+			//해당 데이터가 동기화  될 때까지 기다려야함
+			//cm->clientData.recvBytes = recv(cm->socket, cm->clientData.data, BUFSIZE, 0);
+			//if (cm->clientData.recvBytes <= 0) {
+			//	WarningMessage("[IOCP] : Failed to recv-data : ADD_FRIEND");
+			//	
+			//	//메모리 정리
+			//	goto ADD_FRIEND_CLIEAR;
+			//}
+
+			//while문으로 무한대기 
+			//while (cm->clientData.recvBytes == 0);
+			//recv 받음과 데이터 동기화
+			while (cm->clientData.recvBytes == 0 && iocp->commonDatas.size() <= 0);
+			//GetOverlappedResult함수 사용해보기
+			//DWORD trByte;
+			//GetOverlappedResult((HANDLE)cm->socket, &cm->clientData.overlapped, &trByte, true);
+
+			//공용 데이터 받아서 처리하기
+			// Pointer 형식으로 받을려 하였으나, 포인터 자체가 사라져 원래 데이터로 복사
+			//memcpy(&cm->clientData, iocp->commonDatas.back(), sizeof(CLIENT_IO_DATA));
+			memcpy(&cm->clientData, &iocp->commonDatas.back(), sizeof(CLIENT_IO_DATA));
+
+			//친구 데이터 복사 할 오적 메모리 할당.
+			friendInfo = new FriendInfo;
+			memset(friendInfo, 0, sizeof(FriendInfo));
+
+			//데이터 복사
+			//데이터 해더 부분 추가
+			memcpy(friendInfo, cm->clientData.data+sizeof(DataHeaders), sizeof(FriendInfo));
+			
+			//받은 데이터 계정정보, 친구정보 변환
+			/*accountInfo = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
+			friendInfo = (FriendInfo*)(cm->clientData.data + sizeof(DataHeaders) + sizeof(AccountInfo));*/
+
+			if (iocp->bgySql->AddFrindInfo(accountInfo, friendInfo)) {
+				changeAccountInfo = new AccountInfo;
+				changeFriendInfo = new FriendInfo;
+
+				//ID 상호 복사
+				wcscpy_s(changeAccountInfo->id, ConvertCtoWC(friendInfo->userID.c_str()));
+				changeFriendInfo->userID.append(ConvertWCtoC(accountInfo->id));
+				//친구 정보 복사
+				changeFriendInfo->request = true;
+				changeFriendInfo->friending = false;
+
+				if (!iocp->bgySql->AddFrindInfo(changeAccountInfo, changeFriendInfo)) {
+					WarningMessage("[IOCP] : Failed to AddFrindInfo");
+				}
+
+				ADD_FRIEND_CLIEAR:
+				//쓰고 남은 잔여 메모리 정리
+				delete(friendInfo);
+				delete(accountInfo);
+				delete(changeAccountInfo);
+				delete(changeFriendInfo);
+			}
+
+			break;
+		}
+
 		default:
 			break;
 		}
