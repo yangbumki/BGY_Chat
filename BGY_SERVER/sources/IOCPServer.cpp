@@ -345,9 +345,51 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			FriendInfo* recvFriendInfo,* changeFriendInfo;
 			AccountInfo* recvAccountInfo,* changeAccountInfo;
 
-			recvAccountInfo = (AccountInfo*)(cm->clientData.data + sizeof(DataHeaders));
-			recvFriendInfo = (FriendInfo*)(cm->clientData.data + sizeof(DataHeaders) + sizeof(AccountInfo));
+			//데이터 동적 활당
+			recvAccountInfo = new AccountInfo;
+			memset(recvAccountInfo, 0, sizeof(AccountInfo));
+
+			//데이터 복사
+			memcpy(recvAccountInfo, (cm->clientData.data + sizeof(DataHeaders)), sizeof(AccountInfo));
+
+			//복사 후 데이터 초기화 : 크기 BUFSIZE
+			ZeroMemory(cm->clientData.data, BUFSIZE);
+			cm->clientData.recvBytes = 0;
+			cm->clientData.sendBytes = 0;
+
+			//클라이언트와 동기화를 위한 데이터 헤더 설정
+			//헤더 주소 변경
+			DataHeaders* respondDataHeader = (DataHeaders*)cm->clientData.data;
+			respondDataHeader->dataType = RESPOND;
+			respondDataHeader->dataCnt = 1;
+			respondDataHeader->dataSize = BUFSIZE;
+
+			//데이터 주소 설정
+			char* respondData = (char*)(respondDataHeader + sizeof(DataHeaders));
+			//데이터 설정
+			*respondData = SUCCESS;
+
+			//데이터 전송
+			result = WSASend(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes,cm->clientData.flag, &cm->clientData.overlapped, NULL);
+			if (result == SOCKET_ERROR && result != WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to update_friend_info");
+				break;
+			}
+
+			//데이터 초기화 : 크기 BUFSIZE
+			ZeroMemory(cm->clientData.data, BUFSIZE);
+			cm->clientData.recvBytes = 0;
+			cm->clientData.sendBytes = 0;
 			
+			//데이터 동기화
+			while (cm->clientData.recvBytes == 0 && iocp->commonDatas.size() <= 0);
+
+			//동기화 데이터 초기화
+			recvFriendInfo = new FriendInfo;
+			memset(recvFriendInfo, 0, sizeof(FriendInfo));
+
+			//동기화 데이터 복사
+			memcpy(recvFriendInfo, cm->clientData.data + sizeof(DataHeaders), sizeof(FriendInfo));			
 
 			//내정보 업데이트
 			if (iocp->bgySql->UpdateFriendInfo(recvAccountInfo, recvFriendInfo)) {
@@ -355,7 +397,7 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				changeFriendInfo = new FriendInfo;
 
 				//이름 정보 교환
-				wcscpy_s(changeAccountInfo->name, ConvertCtoWC(recvFriendInfo->userID.c_str()));
+				wcscpy_s(changeAccountInfo->id, ConvertCtoWC(recvFriendInfo->userID.c_str()));
 				changeFriendInfo->userID.append(ConvertWCtoC(recvAccountInfo->name));
 
 				//친구 정보 변환
@@ -368,6 +410,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 				}
 
 				//동적 메모리 삭제
+				//delete(recvFriendInfo);
+				delete(recvAccountInfo);
 				delete(changeAccountInfo);
 				delete(changeFriendInfo);
 			}
@@ -390,9 +434,43 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			//데이터 복사
 			memcpy(accountInfo, (cm->clientData.data + sizeof(DataHeaders)), sizeof(AccountInfo));
 
+			//클라이언트와 동기화를 위한 응답 데이터
 			//받았던 데이터 초기화
 			ZeroMemory(cm->clientData.data, BUFSIZE);
 			cm->clientData.recvBytes = 0;
+			cm->clientData.sendBytes = 0;
+
+			//응답 데이터 형식 포인터 생성
+			DataHeaders* respondDataHeader = nullptr;
+			//데이터 헤더 형식 변경
+			respondDataHeader = (DataHeaders*)cm->clientData.data;
+			//데이터 헤더 설정
+			respondDataHeader->dataType = DataType::RESPOND;
+			respondDataHeader->dataSize = sizeof(cm->clientData.data);
+			respondDataHeader->dataCnt = 1;
+
+			//응답 데이터 형식 포인터 생성
+			//데이터 주소 헤더 + 오프셋 값
+			char* data = (char*)(respondDataHeader + sizeof(DataHeaders));
+			//데이터 설정
+			*data = RESPOND_DATA_TYPE::SUCCESS;
+
+			//데이터 전송 설정
+			cm->clientData.wsaBuf.buf = cm->clientData.data;
+			cm->clientData.wsaBuf.len = sizeof(cm->clientData.data);
+
+			//응답 데이터 전송
+			result = WSASend(cm->socket, &cm->clientData.wsaBuf, 1, &cm->clientData.sendBytes, cm->clientData.flag, &cm->clientData.overlapped, nullptr);
+			if (result == SOCKET_ERROR && result != WSA_IO_PENDING) {
+				WarningMessage("[IOCP] : Failed to AddFriend : respond-data");
+				break;
+			}
+
+			//데이터 초기화
+			ZeroMemory(&cm->clientData.data, BUFSIZE);
+			cm->clientData.recvBytes = 0;
+			cm->clientData.sendBytes = 0;
+
 
 			//이미 신호를 받아서 처리하는 overlap 구조상 바로 넘어감
 			//일반 recv send 구조로 변경
@@ -452,7 +530,7 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 
 				ADD_FRIEND_CLIEAR:
 				//쓰고 남은 잔여 메모리 정리
-				delete(friendInfo);
+				//delete(friendInfo);
 				delete(accountInfo);
 				delete(changeAccountInfo);
 				delete(changeFriendInfo);

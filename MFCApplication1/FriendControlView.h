@@ -34,6 +34,7 @@ private:
 	//Dialog Function
 	virtual BOOL OnInitDialog();
 	bool InitListView();
+	bool UpdateListView();
 
 public:
 	FriendControlView(BGY_CLIENT* client,AccountInfo* accountInfo, CWnd* pParent = nullptr);   // 표준 생성자입니다.

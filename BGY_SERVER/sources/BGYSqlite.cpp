@@ -224,12 +224,28 @@ bool BGYSqlite::UpdateFriendInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 	std::string sql;
 
 	//친구 거절
+	//해당 sql 문에 전달되는 friending, request는 bool 형식이기에 문자열로 판별해야된다.
+	//변수 선언
+	std::string friStr;
+	std::string reqStr;
+
+	const char* trueStr = "1";
+	const char* falseStr = "0";
+
+
+	if (fi->friending) friStr.append(trueStr);
+	else friStr.append(falseStr);
+
+	if (fi->request) reqStr.append(trueStr);
+	else reqStr.append(falseStr);
+
+	//친구 거절
 	if (fi->request == 0 && fi->friending == 0) {
-		sql = AddString("delete from friend_%s where name='%s'", ai->id, fi->userID);
+		sql = AddString("delete from friend_%s where users='%s'", ConvertWCtoC(ai->id), fi->userID.c_str());
 	}
 	//친구 수락
 	else {
-		sql = AddString("update frined_%s set friend_request=%s, friend=%s where users='%s'", ai->id, fi->request, fi->friending, fi->userID);
+		sql = AddString("update friend_%s set friend_request=%s, friend=%s where users='%s'", ConvertWCtoC(ai->id), reqStr.c_str(), friStr.c_str(), fi->userID.c_str());
 	}
 
 	auto result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
@@ -286,7 +302,7 @@ bool BGYSqlite::AddFrindInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 	else reqStr.append(falseStr);
 	
 
-	sql = AddString("insert into friend_%s values('%s',%s,%s)", ai->id, fi->userID, friStr, reqStr);
+	sql = AddString("insert into friend_%s values('%s',%s,%s)", ConvertWCtoC(ai->id), fi->userID.c_str(), friStr.c_str(), reqStr.c_str());
 
 
 	result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
