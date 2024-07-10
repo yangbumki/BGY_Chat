@@ -215,6 +215,8 @@
     <None Include="res\MFCApplication1.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="image\bitmap1.bmp" />
+    <Image Include="image\ChatLogo.bmp" />
     <Image Include="image\MainLogo.bmp" />
     <Image Include="res\MFCApplication1.ico" />
   </ItemGroup>
