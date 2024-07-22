@@ -65,14 +65,15 @@ typedef enum CMD_COLOR {
 }ccolor;
 
 typedef enum DATA_TYPE {
-	COMMON_DATA = 0,
 	CREATE_ACCOUNT = 1,
 	LOGIN_ACCOUNT,
+	COMMON_DATA,
 	FRIEND_INFO,
 	REQUEST_FRIEND_INFO,
 	RESPOND,
 	RESPOND_FRIEND_INFO = RESPOND,
-	ADD_FRIEND
+	ADD_FRIEND,
+	CHAT
 }DataType;
 
 typedef enum RESPOND_DATA_TYPE {
@@ -88,6 +89,12 @@ typedef enum FRIEND_INFO_TYPE {
 }FrinedInfoType, FRIENDINFOTYPE;
 
 //공통구조체
+typedef struct CHAT_INFO {
+	std::string userID;
+	std::string chat;
+	std::string date;
+}CHATINFO, ChatInfo;
+
 typedef struct DB_FRINED_INFO {
 	std::string userID;
 	bool friending;

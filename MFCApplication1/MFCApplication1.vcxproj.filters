@@ -48,6 +48,9 @@
     <ClInclude Include="FriendControlView.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ChatView.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BChat_Application.cpp">
@@ -66,6 +69,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="FriendControlView.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

@@ -4,6 +4,7 @@
 
 //#include "LoginView.h"
 #include "FriendControlView.h"
+#include "ChatView.h"
 #include <vector>
 
 // MainView 대화 상자
@@ -30,8 +31,12 @@ private:
 	CButton talkBtn;
 	CButton logoutBtn;
 
-	//친구 추가 변수
+	//친구추가 다이어로그 변수
 	FriendControlView* friendControlDlg	= nullptr;
+	//대화 다이어로그 변수
+	//대화 창을 여러개 생성 할 수 있으니 해당 다이어로그 벡터로 관리
+	std::vector<ChatView*> chatViewDlgs = {};
+
 	//CEdit* friendAddEdit		= nullptr;
 	//CListBox* friendRequstBox	= nullptr;
 	//CButton* friendAddBtn		= nullptr;
@@ -74,6 +79,10 @@ public:
 
 	afx_msg void OnClose();
 	afx_msg void OnDestroy();
+
+	//친구 추가 버튼 함수
 	afx_msg void FriendCtlBtnClicked();
+	//대화하기 버튼 함수
+	afx_msg void TalkBtnClicked();
 	CStatic logoImg;
 };

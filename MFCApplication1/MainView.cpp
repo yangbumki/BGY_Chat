@@ -24,7 +24,7 @@ void MainView::DynamicMemoryAllocation(T** val) {
 }
 
 bool MainView::InitFriendCtlDlg() {
-	friendControlDlg = new FriendControlView(bClient,this->myAccountInfo, this);
+	friendControlDlg = new FriendControlView(bClient, this->myAccountInfo, this);
 
 	return true;
 }
@@ -32,7 +32,7 @@ BOOL MainView::OnInitDialog() {
 	CDialog::OnInitDialog();
 
 	statusNameLabel.SetWindowTextW(myAccountInfo->name);
-	InitTabView();	
+	InitTabView();
 	InitFriendCtlDlg();
 	InitFriendList();
 
@@ -72,10 +72,10 @@ bool MainView::InitFriendList() {
 }
 bool MainView::SetFirendGridView(bool set) {
 	int status = -1;
-	
+
 	if (!set) status = SW_HIDE;
 	else status = SW_SHOW;
-	
+
 	friendArea.ShowWindow(status);
 	friendListBox->ShowWindow(status);
 	statusNameLabel.ShowWindow(status);
@@ -90,7 +90,7 @@ bool MainView::SetFirendGridView(bool set) {
 bool MainView::RequestFriendsInfo() {
 	DataHeaders dataHeaders = { NULL, };
 	/*AccountInfo* myAccountInfo = nullptr;*/
-	
+
 	dataHeaders.dataType = REQUEST_FRIEND_INFO;
 	dataHeaders.dataSize = sizeof(FriendInfo);
 	dataHeaders.dataCnt = 1;
@@ -125,7 +125,7 @@ bool MainView::SetSettingGridView(bool set) {
 
 	return true;
 }
-MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/)
+MainView::MainView(BgyClient* client, AccountInfo* ac, CWnd* pParent /*=nullptr*/)
 	: CDialog(IDD_MAIN_VIEW, pParent), bClient(client)
 {
 	DynamicMemoryAllocation(&myAccountInfo);
@@ -139,12 +139,19 @@ MainView::MainView(BgyClient* client,AccountInfo* ac, CWnd* pParent /*=nullptr*/
 }
 MainView::~MainView()
 {
+	//친구 정보 값 삭제
 	for (int cnt = 0; cnt < friendInfos.size(); cnt++) {
 		delete(friendInfos[cnt]);
-
 		friendInfos.clear();
-		delete(myAccountInfo);
 	}
+	//채팅 다이어로그 값 삭제
+	for (int cnt = 0; cnt < chatViewDlgs.size(); cnt++) {
+		delete(chatViewDlgs[cnt]);
+		chatViewDlgs.clear();
+	}
+
+	//내정보 삭제
+	delete(myAccountInfo);
 }
 void MainView::DoDataExchange(CDataExchange* pDX)
 {
@@ -174,6 +181,7 @@ BEGIN_MESSAGE_MAP(MainView, CDialog)
 	ON_WM_DESTROY()
 	ON_NOTIFY(TCN_SELCHANGE, TAB_VIEW, &MainView::OnSelchangeTabView)
 	ON_BN_CLICKED(ADD_FRIEND_BTN, &MainView::FriendCtlBtnClicked)
+	ON_BN_CLICKED(TALK_BTN, &MainView::TalkBtnClicked)
 END_MESSAGE_MAP()
 
 
@@ -228,6 +236,7 @@ void MainView::OnDestroy()
 	auto pDlg = (CDialog*)this->GetParent();
 	pDlg->EndDialog(0);
 }
+
 void MainView::FriendCtlBtnClicked() {
 	//재생성
 	if (friendControlDlg == nullptr) {
@@ -240,4 +249,60 @@ void MainView::FriendCtlBtnClicked() {
 	//정리 
 	delete(friendControlDlg);
 	friendControlDlg = nullptr;
+}
+void MainView::TalkBtnClicked() {
+	//현재 선택된 리스트 번호
+	int curSel = friendListBox->GetCurSel();
+	if (curSel == ERROR) {
+		WarningMessage("[MAIN_VIEW] : Failed to talk : nothing selected");
+		return;
+	}
+
+	//선택된 친구 정보
+	//정보 넣을 변수
+	CString curlStr;
+
+	//정보 대입
+	friendListBox->GetText(curSel, curlStr);
+
+
+	curlStr.GetString();
+
+	//동일 대상 다이어로그 판단 변수
+	//기본 true 값으로 설정하여 데이터가 존재하지 않을 경우 다이어로그 생성 조건 만족
+	byte aleadyExistDlg = false;
+	//동일한 대상인지 비교하는 비교 메소드
+	//모든 대상을 비교하는 형태로 제작
+	//24-07-13 윈도우 생성은 성공하였으나, 다른 윈도우 생성할려니까 에러 발생
+	//chatViewDlgs[curCel] -> chatViewDlgs[cnt] 로 변경 에러 수정
+	int maxCnt = chatViewDlgs.size();
+	if (maxCnt > 0) {
+		for (int cnt = 0; cnt < maxCnt; cnt++) {
+			auto result = wcscmp(curlStr.GetString(), chatViewDlgs[cnt]->GetChatTargetInfo());
+			//동일한 대상이 존재할 경우 
+			if (result == 0) {
+				aleadyExistDlg = !result;
+				break;
+			}
+		}
+	}
+	//기존 데이터가 존재 하지 않을 경우 dlg true 값 입력
+	//else aleadyExistDlg = true;
+	//존재 하지 않을 경우
+	if (!aleadyExistDlg) {
+		//다이어로그 동적 생성
+		ChatView* tmpCv = new ChatView((wchar_t*)curlStr.GetString());
+		//동적생성이 실패했을 경우
+		if (tmpCv == nullptr) {
+			WarningMessage("[MAIN_VIEW] : Failed to allocate chat-dlg");
+			return;
+		}
+
+		chatViewDlgs.push_back(tmpCv);
+		// 윈도우 생성
+		// tmpCv->DoModal();
+		tmpCv->Create(IDD_CHAT_VIEW);
+		tmpCv->ShowWindow(SW_SHOW);
+	}
+	//존재 할 경우
 }

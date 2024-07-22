@@ -389,7 +389,15 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			memset(recvFriendInfo, 0, sizeof(FriendInfo));
 
 			//동기화 데이터 복사
-			memcpy(recvFriendInfo, cm->clientData.data + sizeof(DataHeaders), sizeof(FriendInfo));			
+			/*memcpy(recvFriendInfo, cm->clientData.data + sizeof(DataHeaders), sizeof(FriendInfo));*/
+			//데이터 먼저 CM 구조체 복사
+			memcpy(&cm->clientData, &iocp->commonDatas.back(), sizeof(CLIENT_IO_DATA));
+
+			//commonDatas 에서 값 삭제
+			iocp->commonDatas.pop_back();
+
+			//CM 구조체에서 FriendInfo 값 복사
+			memcpy(recvFriendInfo, cm->clientData.data + sizeof(DataHeaders), sizeof(FriendInfo));
 
 			//내정보 업데이트
 			if (iocp->bgySql->UpdateFriendInfo(recvAccountInfo, recvFriendInfo)) {
@@ -500,6 +508,8 @@ DWORD WINAPI IOCPServer::ServerWorkerThread(LPVOID args) {
 			// Pointer 형식으로 받을려 하였으나, 포인터 자체가 사라져 원래 데이터로 복사
 			//memcpy(&cm->clientData, iocp->commonDatas.back(), sizeof(CLIENT_IO_DATA));
 			memcpy(&cm->clientData, &iocp->commonDatas.back(), sizeof(CLIENT_IO_DATA));
+			//commonDatas 에서 값 삭제
+			iocp->commonDatas.pop_back();
 
 			//친구 데이터 복사 할 오적 메모리 할당.
 			friendInfo = new FriendInfo;

@@ -301,6 +301,12 @@ void FriendControlView::AddFriendBtnClicked() {
 	//친구 추가 될 ID 가져오기
 	friendAddEdit->GetWindowTextW(friendAddID);
 
+	//ID 오류 확인
+	if (friendAddID.GetLength() <= 0) {
+		WarningMessage("[FRIEND_ADD_VIEW] : Failed to get friend-add-edit");
+		return;
+	}
+
 	//통신 변수
 	//데이터 헤더	: RESPOND_FRIEND_INFO
 	//실 데이터		: AccountInfo + FriendInfo 구성

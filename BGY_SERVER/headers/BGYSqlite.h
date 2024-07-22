@@ -29,5 +29,6 @@ public:
 	std::vector<FRIENDINFO> GetFriendInfo(const DB_ACCOUNT_INFO ai);
 	bool UpdateFriendInfo(const AccountInfo* ai, const FRIENDINFO* fi);
 	bool AddFrindInfo(const AccountInfo* ai, const FRIENDINFO* fi);
+	bool AddChatInfo(const AccountInfo* ai,const FRIENDINFO* fi, const ChatInfo* chat);
 };
 

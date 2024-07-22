@@ -184,6 +184,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\common.h" />
+    <ClInclude Include="ChatView.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="FriendControlView.h" />
     <ClInclude Include="headers\BGY_Client.hpp" />
@@ -197,6 +198,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BChat_Application.cpp" />
+    <ClCompile Include="ChatView.cpp" />
     <ClCompile Include="FriendControlView.cpp" />
     <ClCompile Include="LoginView.cpp" />
     <ClCompile Include="MainView.cpp" />

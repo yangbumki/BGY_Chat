@@ -62,6 +62,8 @@ bool BGYSqlite::CreateAccount(const DB_ACCOUNT_INFO ai) {
 
 	sql.push_back(AddString("insert into users values('%s', '%s', '%s', '%s');", id, passwd, name, birth));
 	sql.push_back((AddString("create table friend_%s(users text, friend bool, friend_request bool);", id)));
+	//2024-07-15 대화정보 저장 테이블 생성
+	sql.push_back((AddString("create table chat_%s(users text,chating text,date text);", id)));
 
 	for (int cnt = 0; cnt < sql.size(); cnt++) {
 		auto result = sqlite3_prepare(db, sql[cnt].c_str(), -1, &stmt, nullptr);
@@ -250,7 +252,7 @@ bool BGYSqlite::UpdateFriendInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 
 	auto result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
 	if (result != SQLITE_OK) {
-		WarningMessage("[SQL] : Failed to preare : UpdateFriendInfo");
+		WarningMessage("[SQL] : Failed to prepare : UpdateFriendInfo");
 		sqlite3_finalize(stmt);
 		return false;
 	}
@@ -304,10 +306,12 @@ bool BGYSqlite::AddFrindInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 
 	sql = AddString("insert into friend_%s values('%s',%s,%s)", ConvertWCtoC(ai->id), fi->userID.c_str(), friStr.c_str(), reqStr.c_str());
 
+	//Debugging 용 MessageBox 추가
+	//MessageBoxA(NULL, sql.c_str(), "SQL", NULL);
 
 	result = sqlite3_prepare(db, sql.c_str(), -1, &stmt, NULL);
 	if (result != SQLITE_OK) {
-		WarningMessage("[SQL] : Failed to preare : AddFriendInfo");
+		WarningMessage("[SQL] : Failed to prepare : AddFriendInfo");
 		sqlite3_finalize(stmt);
 		return false;
 	}
@@ -316,5 +320,18 @@ bool BGYSqlite::AddFrindInfo(const AccountInfo* ai, const FRIENDINFO* fi) {
 
 	sqlite3_finalize(stmt);
 
+	return true;
+}
+bool BGYSqlite::AddChatInfo(const AccountInfo* ai, const FRIENDINFO* fi, const ChatInfo* 
+chat) {
+	std::string sql;
+
+	sql.append(AddString("insert into chat_%s values('%s', '%s', '%s')", fi->userID, chat->userID, chat->chat, chat->date));
+	sql.append(AddString("insert into chat_%s values('%s', '%s', '%s')", ai->name, chat->userID, chat->chat, chat->date));
+
+	//이거 맞?
+	for (const auto& tmpSql : sql) {
+		//sqlite3_prepare(db, tmpSql, -1, &stmt, nullptr);
+	}
 	return true;
 }
